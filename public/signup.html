@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset='utf-8'>
+	<meta description='Unreal Engine Shader Cache Tool by Acinonyx'>
+	<meta name='viewport' content='width=device-width,initial-scale=1'>
+
+	<title>Shaderbuilder</title>
+
+	<!-- Font Preload -->	
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+
+	<!-- Circular for testing -->
+	<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Flow+Circular&amp;display=swap" />
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Flow+Circular&amp;display=swap" media="print" onload="this.media='all'" />
+  
+	<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;display=swap" />
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;display=swap" media="print" onload="this.media='all'" />
+  
+	<link rel="preload" as="style" href="https://fonts.googleapis.com/css?family=Noto+Serif+SC:wght@200;400&amp;display=swap" />
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Serif+SC:wght@200;400&amp;display=swap" media="print" onload="this.media='all'" />
+  
+	<link rel="preload" as="style" href="https://fonts.googleapis.com/css?family=Noto+Sans+SC:wght@300&amp;display=swap" />
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+SC:wght@300&amp;display=swap" media="print" onload="this.media='all'" />
+  
+	<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel&amp;display=swap" />
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel&amp;display=swap" media="print" onload="this.media='all'" />
+  
+	<link rel="preload" as="style" href="https://fonts.googleapis.com/css?family=Roboto:wght@100;300;400&amp;display=swap" />
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:wght@100;300;400&amp;display=swap" media="print" onload="this.media='all'" />
+
+
+	<link rel='icon' type='image/png' href='/static/favicon.png'>
+	<link rel='stylesheet' href='/static/global.css'>
+	<link rel='stylesheet' href='/static/build/bundle.css'>
+	<script type="text/javascript">
+		function jsonsubmit()
+		{
+			let form = document.forms[0];
+			var xhr = new XMLHttpRequest();
+			var formData = new FormData(form);
+			xhr.open(form.method, form.action, true);
+			xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+			xhr.send(
+				JSON.stringify(
+					Object.fromEntries(
+						formData
+					)
+				)
+			);
+
+			console.log(				JSON.stringify(
+					Object.fromEntries(
+						formData
+					)
+				));
+		}; //  onclick="jsonsubmit()">
+	</script>
+</head>
+
+<body>
+	<main>
+		<h1>Sign Up</h1>
+
+		<form action="/signup" method="post">
+			<label for="fname">Username</label>
+			<input type="text" id="fname" name="username" placeholder="Username" ><br><br>
+
+			<label for="dname">Display Name</label>
+			<input type="text" id="dname" name="displayname" placeholder="Display Name" ><br><br>
+
+			<label for="lname">Password</label>
+			<input type="password" id="lname" name="password" placeholder="Password"><br><br>
+			<input type="submit" value="Submit">
+		</form>
+
+		<br>
+		<p>Or <a href="/login">Sign In</a></p>
+	</main>
+</body>
+</html>
