@@ -2,6 +2,7 @@
 // Can be delayed
 
 import type { PipelineShaderObjectDB } from "./db.js";
+import { HashOfBuffer, StringToVersion } from './helpers.js';
 
 // Also fetch the user's boards.
 // This is needed the moment after login flow
@@ -9,7 +10,7 @@ import type { PipelineShaderObjectDB } from "./db.js";
 // Let's just load the board names
 // We can look for the boards later!
 
-async function getBoardsForUser(req, res, db: PipelineShaderObjectDB)
+async function getMachinesForOwner(req, res, db: PipelineShaderObjectDB)
 {
     console.log("[INFO] Request machine data for user " + req.user.toString());
     try
@@ -45,6 +46,87 @@ async function getUserInfo(req, res, db)
     {
         console.log(Except);
         res.sendStatus(500);
+    }
+}
+
+async function ListMachinesByProject(req,res,psoDB)
+{
+    try
+    {
+        let project: Buffer = Buffer.from(req.params.project, "hex");
+        //let userid: Express.User = req.user;
+        if ("passport" in req.session)
+        {
+            let userid: number = req.session["passport"].user;
+
+            let currentDate: Date = new Date();
+            let a = await psoDB.GetPermissionsByProjectUUIDAndUserID(project, userid, currentDate);
+
+
+            if(a && a.permadminmachines)
+            {
+                let x = await psoDB.GetMachinesByOrgUUID_ValidatedByUserID(project, userid);
+
+                console.log(x);
+
+                x = JSON.stringify(x);
+        
+                res.status(200).send(x);//`{ "userdata": ${userData} }`);
+            }
+            else
+            {
+                res.sendStatus(400);
+            }
+        }
+        else
+        {
+            res.sendStatus(400);
+        }
+    }
+    catch (Exception)
+    {
+        console.log(Exception);
+        res.status(500).send("{ \"code\": 0, \"reason\": \"Exception\" }");
+    }
+}
+
+async function ListMachinesByOrg(req,res,psoDB)
+{
+    try
+    {
+        let org: Buffer = Buffer.from(req.params.org, "hex");
+        //let userid: Express.User = req.user;
+        if ("passport" in req.session)
+        {
+            let userid: number = req.session["passport"].user;
+
+            let a = await psoDB.GetPermissionsByOrgUUIDAndUserID(org, userid);
+
+
+            if(a && a.permadminmachines)
+            {
+                let x = await psoDB.GetMachinesByOrgUUID_ValidatedByUserID(org, userid);
+
+                console.log(x);
+
+                x = JSON.stringify(x);
+        
+                res.status(200).send(x);//`{ "userdata": ${userData} }`);
+            }
+            else
+            {
+                res.sendStatus(400);
+            }
+        }
+        else
+        {
+            res.sendStatus(400);
+        }
+    }
+    catch (Exception)
+    {
+        console.log(Exception);
+        res.status(500).send("{ \"code\": 0, \"reason\": \"Exception\" }");
     }
 }
 
@@ -109,6 +191,78 @@ async function getAllPCOsForUser(req, res, db)
     }
 }
 
+async function AddNewPSOToProject(req,res,psoDB, isStableKey)
+{
+    try
+    {
+        let version: string = req.params.version;
+        let machine: Buffer = Buffer.from(req.params.machine, 'hex');
+        let project: Buffer = Buffer.from(req.params.project, 'hex');
+
+        //await psoDB.AddMachine(1, "temp", Buffer.from("59BAF778B714E5CAF6A7F3A3DE036749122829BDC30639F155130BDB21D74166", 'hex'));
+        //psoDB.Create
+        //await psoDB.AddProject(1, "TestProject", Buffer.from("59BAF778B714E5CAF6A7F3A3DE036749122829BDC30639F155130BDB21D74166", 'hex'));
+
+        // Take Data, hash it, and insert
+        // TODO: Try to parse it
+        // HCACEPIP
+
+        // Assert
+        let short = req.body.subarray(0,8);
+
+        if (short.equals(Buffer.from("HCACEPIP")))
+        {
+            let hash = await HashOfBuffer(req.body);
+
+            let datenow = new Date();
+
+            // Check Machine Exists
+            let DoesMachineExist = await psoDB.GetMachinesByFingerprint(machine);
+            let vInts = StringToVersion(version);
+            
+
+            let result = 1;
+            if (DoesMachineExist)
+            {
+                result = await psoDB.AddPSO(project, hash, req.body, datenow, machine, version, isStableKey); 
+                console.log(`Result: ${result}`);
+            }
+            else
+            {
+                console.log(`Machine: ${DoesMachineExist}`);
+            }
+
+            // Results
+            if(0 == result)
+            {
+                res.sendStatus(200);
+                return;
+            }
+            else if (-1 == result)
+            {
+                res.status(400).send("{ \"code\": -1, \"reason\": \"Bad Project\" }");
+                return;
+            }
+            else if (-2 == result)
+            {
+                res.status(403).send("{ \"code\": -2, \"reason\": \"Permission Error\" }");
+                return;
+            }
+
+            res.sendStatus(400);//.send(JSON.stringify(results));
+        }
+        else
+        {
+            res.sendStatus(400);
+        }
+    }
+    catch (Exception)
+    {
+        console.log(Exception);
+        res.status(500).send("{ \"code\": 0, \"reason\": \"Exception\" }");
+    }
+}
+
 async function getAllPCOs(req, res, db)
 {
     try
@@ -127,4 +281,4 @@ async function getAllPCOs(req, res, db)
 }
 
 
-export {getBoardsForUser, getUserInfo, getAllPCOsForUser, getAllPCOs};
+export {AddNewPSOToProject, ListMachinesByOrg, ListMachinesByProject, getMachinesForOwner, getUserInfo, getAllPCOsForUser, getAllPCOs};

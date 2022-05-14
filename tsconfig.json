@@ -1,0 +1,11 @@
+{
+  "extends": "@tsconfig/svelte/tsconfig.json",
+
+  "include": ["backend/**/*", ],
+  "exclude": ["node_modules/*", "__sapper__/*", "public/*"],
+
+  "compilerOptions": {
+    "outDir": "./build",
+    "module": "es2020"
+  }
+}

@@ -39,6 +39,22 @@ class PipelineShaderObjectDB
         }
     );
 
+    PSGetProjectIDByUUID = new PreparedStatement(
+        {
+            name: "PSGetProjectIDByUUID",
+            text: "SELECT projects.projectid FROM projects WHERE projects.uuid = $1"
+        }
+    );
+
+    PSGetOrgIDByUUID = new PreparedStatement(
+        {
+            name: "PSGetOrgIDByUUID",
+            text: "SELECT organisations.orgid FROM organisations WHERE organisations.uuid = $1"
+        }
+    );
+
+    
+
     // PSGetAuthByUID = new PreparedStatement(
     //     {
     //         name: "PSGetAuthByUID",
@@ -66,13 +82,134 @@ class PipelineShaderObjectDB
     //         text: "SELECT * FROM user_machine WHERE ownerid = $1"
     //     }
     // );
+    
+    PSGetPermissionsByOrgAndUserIDs = new PreparedStatement(
+        {
+            name: "PSGetPermissionsByOrgAndUserIDs",
+            text: "SELECT *\
+            FROM organisation_user_perms \
+            WHERE \
+                organisation_user_perms.orgid = $1 AND \
+                organisation_user_perms.userid = $2 \
+            "
+        }
+    );
 
-    // PSGetMachinesByUID = new PreparedStatement(
-    //     {
-    //         name: "PSGetMachinesByUID",
-    //         text: "SELECT machines.machineid, machines.machinename FROM machines, user_machine WHERE machines.machineid = user_machine.machineid AND user_machine.ownerid = $1"
-    //     }
-    // );
+    PSGetPermissionsByOrgUUIDAndUserID = new PreparedStatement(
+        {
+            name: "PSGetPermissionsByOrgUUIDAndUserID",
+            text: "SELECT organisation_user_perms.* \
+            FROM organisations, organisation_user_perms \
+            WHERE \
+                organisations.uuid = $1 AND \
+                organisation_user_perms.orgid = organisations.orgid AND \
+                organisation_user_perms.userid = $2 \
+            "
+        }
+    );
+
+    PSGetPermissionsByProjectUUIDAndUserID = new PreparedStatement(
+        {
+            name: "PSGetPermissionsByProjectUUIDAndUserID",
+            text: "SELECT project_user_perms.* \
+            FROM projects, project_user_perms \
+            WHERE \
+                projects.uuid = $1 AND \
+                projects.projectid = project_user_perms.projectid AND \
+                project_user_perms.userid = $2 AND \
+                project_user_perms.validfrom < $3 AND \
+                project_user_perms.validuntil > $3 \
+            "
+        }
+    );
+
+    PSGetMachinesByProjectUUID_ValidatedByUserID = new PreparedStatement(
+        {
+            name: "PSGetMachinesByProjectUUID_ValidatedByUserID",
+            text: "SELECT \
+                machines.machineid, machines.machinename, machines.fingerprint \
+            FROM \
+                machines, projects, project_user_perms, project_machine_perms, organisation_user_perms \
+            WHERE \
+                machines.machineid = project_machine_perms.machineid AND \
+                project_machine_perms.projectid = projects.projectid AND \
+                projects.uuid = $1 AND \
+                (\
+                    (\
+                        projects.projectid = project_user_perms.projectid AND \
+                        project_user_perms.userid = $2 AND \
+                        project_user_perms.validfrom < $3 AND \
+                        project_user_perms.validuntil > $3 \
+                    )\
+                    OR \
+                    (\
+                        projects.orgid = organisation_user_perms.orgid AND \
+                        organisation_user_perms.userid = $2 AND \
+                        organisation_user_perms.permadminprojects = true\
+                    )\
+                )\
+            "
+        }
+    );
+
+    PSGetCacheDataAfterDate_ValidatedByMachine = new PreparedStatement(
+        {
+            name: "PSGetCacheDataAfterDate_ValidatedByMachine",
+            text: "SELECT DISTINCT\
+                pipelinecachedata.pipelinecachedata, \
+                pipelinecaches.versionMajor, \
+                pipelinecaches.versionMinor, \
+                pipelinecaches.versionRevision, \
+                pipelinecaches.versionBuild \
+            FROM \
+                pipelinecachedata, pipelinecaches, project_machine_perms, machines, projects \
+            WHERE \
+                pipelinecachedata.pipelinecachedataid = pipelinecaches.dataid AND \
+                pipelinecaches.datetime > $2 AND \
+                pipelinecaches.projectid = projects.projectid AND \
+                projects.uuid = $1 AND \
+                machines.fingerprint = $3 AND \
+                project_machine_perms.machineid = machines.machineid AND \
+                project_machine_perms.projectid = projects.projectid AND \
+                project_machine_perms.validfrom < $4 AND \
+                project_machine_perms.validuntil > $4 AND \
+                project_machine_perms.permpullcaches = true \
+            "
+        }
+    );
+
+    PSGetMachinesByOrgID_ValidatedByUserID = new PreparedStatement(
+        {
+            name: "PSGetMachinesByOrgID_ValidatedByUserID",
+            text: "SELECT \
+                machines.machineid, machines.machinename, machines.fingerprint \
+            FROM \
+                machines, organisations, organisation_user_perms \
+            WHERE \
+                machines.orgid = $1 AND \
+                organisation_user_perms.orgid = $1 AND \
+                organisation_user_perms.userid = $2 AND \
+                organisation_user_perms.permadminmachines = true \
+            "
+        }
+    );
+
+    PSGetMachinesByOrgUUID_ValidatedByUserID = new PreparedStatement(
+        {
+            name: "PSGetMachinesByOrgUUID_ValidatedByUserID",
+            text: "SELECT \
+                machines.machineid, machines.machinename, machines.fingerprint \
+            FROM \
+                machines, organisations, organisation_user_perms \
+            WHERE \
+                machines.orgid = organisation_user_perms.orgid AND \
+                organisation_user_perms.orgid = organisations.orgid AND \
+                organisations.uuid = $1 AND \
+                organisation_user_perms.userid = $2 AND \
+                organisation_user_perms.permadminmachines = true \
+            "
+        }
+    );
 
     PSGetMachinesByPrint = new PreparedStatement(
         {
@@ -81,19 +218,22 @@ class PipelineShaderObjectDB
         }
     );
 
-    // PSGetBoardByBID = new PreparedStatement(
-    //     {
-    //         name: "PSGetBoardByBID",
-    //         text: "SELECT * FROM machines WHERE machineid = $1"
-    //     }
-    // );
-
-    // PSGetPipelineCachesInBoard = new PreparedStatement(
-    //     {
-    //         name: "PSGetPipelineCachesInBoard",
-    //         text: "SELECT * FROM boardcontents WHERE machineid = $1"
-    //     }
-    // );
+    PSGetMachinePermissionsForProjectByUUIDs = new PreparedStatement(
+        {
+            name: "PSGetMachinePermissionsForProjectByUUIDs",
+            text: "SELECT project_machine_perms.* \
+            FROM \
+                project_machine_perms, projects, machines \
+            WHERE \
+                project_machine_perms.projectid = projects.projectid AND \
+                projects.uuid = $1 AND \
+                machines.fingerprint = $2 AND \
+                project_machine_perms.machineid = machines.machineid AND \
+                project_machine_perms.validfrom < $3 AND \
+                project_machine_perms.validuntil > $3 \
+            "
+        }
+    );
 
     PSGetPipelineDataByToken = new PreparedStatement(
         {
@@ -118,12 +258,12 @@ class PipelineShaderObjectDB
     //     }
     // );
 
-    PSGetPipelineCacheByHash = new PreparedStatement(
-        {
-            name: "PSGetPipelineCacheByHash",
-            text: "SELECT * FROM pipelinecaches WHERE hash = $1"
-        }
-    );
+    // PSGetPipelineCacheByHash = new PreparedStatement(
+    //     {
+    //         name: "PSGetPipelineCacheByHash",
+    //         text: "SELECT * FROM pipelinecaches WHERE hash = $1"
+    //     }
+    // );
 
     PSGetPipelineCacheDataByHash = new PreparedStatement(
         {
@@ -135,7 +275,7 @@ class PipelineShaderObjectDB
     PSGetPipelineCacheDataByHashShort = new PreparedStatement(
         {
             name: "PSGetPipelineCacheDataByHashShort",
-            text: "SELECT hash FROM pipelinecachedata WHERE hash = $1"
+            text: "SELECT pipelinecachedataid FROM pipelinecachedata WHERE hash = $1"
         }
     );
 
@@ -146,10 +286,21 @@ class PipelineShaderObjectDB
     //     }
     // );
 
-    PSGetPipelineCacheByHashVersionShort = new PreparedStatement(
+    PSGetPipelineCacheByHashVersionProjectShort = new PreparedStatement(
         {
-            name: "PSGetPipelineCacheByHashVersionShort",
-            text: "SELECT pipelinecacheid, datetime FROM pipelinecaches WHERE hash = $1 AND versionMajor = $2 AND versionMinor = $3 AND versionRevision = $4 AND versionBuild = $5"
+            name: "PSGetPipelineCacheByHashVersionProjectShort",
+            text: "SELECT pipelinecaches.pipelinecacheid, pipelinecaches.datetime \
+            FROM \
+                pipelinecaches, pipelinecachedata, projects \
+            WHERE \
+                pipelinecachedata.hash = $1 AND \
+                pipelinecaches.dataid = pipelinecachedata.pipelinecachedataid AND \
+                pipelinecaches.projectid = projects.projectid AND \
+                projects.uuid = $2 AND \
+                versionMajor = $3 AND \
+                versionMinor = $4 AND \
+                versionRevision = $5 AND \
+                versionBuild = $6"
         }
     );
 
@@ -245,6 +396,44 @@ class PipelineShaderObjectDB
                     AND machines.fingerprint = $1"
         }
     );  
+
+    // PSAddUserToOrganisation = new PreparedStatement(
+    //     {
+    //         name: "PSAddUserToOrganisation",
+    //         text: "INSERT INTO org_user (orgid, userid) VALUES ($1, $2);"
+    //     }
+    // );  
+
+    PSAddUserToOrganisationUserPerms = new PreparedStatement(
+        {
+            name: "PSAddUserToOrganisationUserPerms",
+            text: "INSERT INTO organisation_user_perms (orgid, userid) VALUES ($1, $2);"
+        }
+    );  
+
+    PSModifyOrgUserPermissions = new PreparedStatement(
+        {
+            name: "PSModifyOrgUserPermissions",
+            text: "UPDATE organisation_user_perms \
+            SET permAdminOrganisation = $3, \
+                permAdminUsers = $4, \
+                permCreateUser = $5, \
+                permDeleteUser = $6, \
+                permEditUser = $7, \
+                permAdminMachines = $8, \
+                permCreateMachines = $9, \
+                permDeleteMachines = $10, \
+                permEditMachines = $11, \
+                permAdminProjects = $12, \
+                permCreateProject = $13, \
+                permDeleteProject = $14, \
+                permEditProject = $15 \
+            WHERE orgid = $1 AND userid = $2 \
+            ;"
+        }
+    );
+
+    
 
     // PSRemovePipelineCacheFromBoard = new PreparedStatement(
     //     {
@@ -391,20 +580,40 @@ class PipelineShaderObjectDB
     {
         try
         {
-            console.log("[WARN] Clearing Database");
-            await this.pgdb.query("DROP TABLE IF EXISTS users;");
-            console.log("[WARN] Dropped Table 'users'");
-            await this.pgdb.query("DROP TABLE IF EXISTS user_machine;");
-            console.log("[WARN] Dropped Table 'user_machine'");
-            await this.pgdb.query("DROP TABLE IF EXISTS machines");
-            console.log("[WARN] Dropped Table 'machines'");
-            await this.pgdb.query("DROP TABLE IF EXISTS auth;");
-            console.log("[WARN] Dropped Table 'auth'");
-            await this.pgdb.query("DROP TABLE IF EXISTS pipelinecache;");
-            console.log("[WARN] Dropped Table 'pipelinecache'");
-            await this.pgdb.query("DROP TABLE IF EXISTS pipelinecachedata;");
-            console.log("[WARN] Dropped Table 'pipelinecachedata'");
-
+            console.log("[WARN] DBClear: Nuclear Option");
+            await this.pgdb.query("drop table if exists projects_users cascade; \
+                drop table if exists projects_machines cascade; \
+                drop table if exists project_user_perms cascade; \
+                drop table if exists project_machine_perms cascade; \
+                drop table if exists pipelinecaches cascade; \
+                drop table if exists pipelinecachedata cascade; \
+                drop table if exists org_user cascade; \
+                drop table if exists machines cascade; \
+                drop table if exists machineprints cascade; \
+                drop table if exists org_project cascade; \
+                drop table if exists projects cascade; \
+                drop table if exists organisation_user_perms cascade; \
+                drop table if exists users cascade; \
+                drop table if exists auth cascade; \
+                drop table if exists organisations cascade; \
+            ");
+            // console.log("[WARN] Clearing Database");
+            // await this.pgdb.query("DROP TABLE IF EXISTS organisations;");
+            // console.log("[WARN] Dropped Table 'organisations'");
+            // await this.pgdb.query("DROP TABLE IF EXISTS users;");
+            // console.log("[WARN] Dropped Table 'users'");
+            // await this.pgdb.query("DROP TABLE IF EXISTS user_machine;");
+            // console.log("[WARN] Dropped Table 'user_machine'");
+            // await this.pgdb.query("DROP TABLE IF EXISTS machines");
+            // console.log("[WARN] Dropped Table 'machines'");
+            // await this.pgdb.query("DROP TABLE IF EXISTS auth;");
+            // console.log("[WARN] Dropped Table 'auth'");
+            // await this.pgdb.query("DROP TABLE IF EXISTS pipelinecache;");
+            // console.log("[WARN] Dropped Table 'pipelinecache'");
+            // await this.pgdb.query("DROP TABLE IF EXISTS pipelinecachedata;");
+            // console.log("[WARN] Dropped Table 'pipelinecachedata'");
+            // await this.pgdb.query("DROP TABLE IF EXISTS projects;");
+            // console.log("[WARN] Dropped Table 'projects'");
         }
         catch (Err)
         {
@@ -447,56 +656,221 @@ class PipelineShaderObjectDB
             ( \
                 userid INT REFERENCES auth (userid) ON UPDATE CASCADE ON DELETE CASCADE, \
                 displayname VARCHAR, \
-                permissionLevelRead BOOLEAN, \
-                permissionLevelWrite BOOLEAN, \
                 CONSTRAINT auth_user_key PRIMARY KEY (userid) \
             ); \
+        ");
+    }
+
+    async InitialiseOrganisations()
+    {
+        await this.pgdb.query("CREATE TABLE IF NOT EXISTS organisations \
+            ( \
+                orgid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
+                uuid BYTEA UNIQUE, \
+                displayname VARCHAR \
+            ); \
+        ");
+
+        //machines INT ARRAY REFERENCES machines (machineid), \
+        //projects INT ARRAY REFERENCES projects (projectid), \
+    }
+
+    async InitialiseOrganisationLinkTables()
+    {
+        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS org_user \
+        //     ( \
+        //         orgid INT REFERENCES organisations (orgid) ON DELETE CASCADE, \
+        //         userid INT REFERENCES users (userid) ON UPDATE CASCADE ON DELETE CASCADE, \
+        //         CONSTRAINT org_user_key PRIMARY KEY (orgid, userid ) \
+        //     ); \
+        // ");
+
+        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS org_machine \
+        //     ( \
+        //         orgid INT REFERENCES organisations (orgid) ON DELETE CASCADE, \
+        //         machineid INT REFERENCES machines (machineid) ON UPDATE CASCADE ON DELETE CASCADE, \
+        //         CONSTRAINT org_machine_key PRIMARY KEY (orgid, machineid)\
+        //     ); \
+        // ");
+
+        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS org_project \
+        //     ( \
+        //         orgid INT REFERENCES organisations (orgid) ON DELETE CASCADE, \
+        //         projectid INT REFERENCES projects (projectid) ON UPDATE CASCADE ON DELETE CASCADE, \
+        //         CONSTRAINT org_project_key PRIMARY KEY (orgid, projectid)\
+        //     ); \
+        // ");
+
+        await this.pgdb.query("CREATE TABLE IF NOT EXISTS organisation_user_perms \
+            ( \
+                orgid INT REFERENCES organisations (orgid) ON DELETE CASCADE, \
+                userid INT REFERENCES users (userid) ON DELETE CASCADE, \
+                permAdminOrganisation BOOLEAN DEFAULT false, \
+                \
+                permAdminUsers BOOLEAN DEFAULT false, \
+                permCreateUser BOOLEAN DEFAULT false, \
+                permDeleteUser BOOLEAN DEFAULT false, \
+                permEditUser BOOLEAN DEFAULT false, \
+                \
+                permAdminMachines BOOLEAN DEFAULT false, \
+                permCreateMachines BOOLEAN DEFAULT false, \
+                permDeleteMachines BOOLEAN DEFAULT false, \
+                permEditMachines BOOLEAN DEFAULT false, \
+                \
+                permAdminProjects BOOLEAN DEFAULT false, \
+                permCreateProject BOOLEAN DEFAULT false, \
+                permDeleteProject BOOLEAN DEFAULT false, \
+                permEditProject BOOLEAN DEFAULT false, \
+                \
+                CONSTRAINT organisation_user_perms_key PRIMARY KEY (orgid, userid) \
+            ); \
+        ");
+    }
+
+    //permissionLevelRead BOOLEAN, \
+    //permissionLevelWrite BOOLEAN, \
+
+    async InitialiseProjects()
+    {        
+        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS projects \
+        //     ( \
+        //         projectid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
+        //         displayname VARCHAR, \
+        //         uuid BYTEA \
+        //     ); \
+        // ");
+
+        console.log("[DBUG][INFO] CREATE TABLE IF NOT EXISTS projects")
+        await this.pgdb.query("CREATE TABLE IF NOT EXISTS projects \
+            ( \
+                projectid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
+                orgid INT REFERENCES organisations (orgid) ON DELETE CASCADE,\
+                displayname VARCHAR, \
+                uuid BYTEA UNIQUE \
+            ); \
+        ");
+
+        // console.log("[DBUG][INFO] CREATE TABLE IF NOT EXISTS projects_users")
+        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS projects_users \
+        //     ( \
+        //         projectid INT NOT NULL REFERENCES projects (projectid) ON DELETE CASCADE, \
+        //         userid INT NOT NULL REFERENCES users (userid) ON DELETE CASCADE, \
+        //         CONSTRAINT projects_users_key PRIMARY KEY (projectid, userid) \
+        //     ); \
+        // ");
+
+        // console.log("[DBUG][INFO] CREATE TABLE IF NOT EXISTS projects_machines")
+        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS projects_machines \
+        //     ( \
+        //         projectid INT NOT NULL REFERENCES projects (projectid) ON DELETE CASCADE, \
+        //         machineid INT NOT NULL REFERENCES machines (machineid) ON DELETE CASCADE, \
+        //         CONSTRAINT projects_machines_key PRIMARY KEY (projectid, machineid) \
+        //     ); \
+        // ");
+
+        console.log("[DBUG][INFO] CREATE TABLE IF NOT EXISTS project_user_perms")
+        await this.pgdb.query("CREATE TABLE IF NOT EXISTS project_user_perms \
+            ( \
+                projectid INT REFERENCES projects (projectid) ON DELETE CASCADE, \
+                userid INT REFERENCES users (userid) ON DELETE CASCADE, \
+                validFrom TIMESTAMP, \
+                validUntil TIMESTAMP, \
+                CONSTRAINT project_user_perms_key PRIMARY KEY (projectid, userid) \
+            );\
+        ");
+
+        console.log("[DBUG][INFO] CREATE TABLE IF NOT EXISTS project_machine_perms")
+        await this.pgdb.query("CREATE TABLE IF NOT EXISTS project_machine_perms \
+            ( \
+                projectid INT REFERENCES projects (projectid) ON DELETE CASCADE, \
+                machineid INT REFERENCES machines (machineid) ON DELETE CASCADE, \
+                validFrom TIMESTAMP, \
+                validUntil TIMESTAMP, \
+                permSubmitCaches BOOLEAN, \
+                permPullCaches BOOLEAN, \
+                CONSTRAINT project_machine_perms_key PRIMARY KEY (projectid, machineid) \
+            );\
         ");
     }
 
     async InitialisePSOs()
     {
         await this.pgdb.query("\
-        CREATE TABLE IF NOT EXISTS pipelinecaches \
-        ( \
-            pipelinecacheid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
-            datetime TIMESTAMP, \
-            versionMajor INT, \
-            versionMinor INT, \
-            versionRevision INT, \
-            versionBuild INT, \
-            hash BYTEA \
-        ); \
-        ");
+            CREATE TABLE IF NOT EXISTS pipelinecachedata \
+            ( \
+                pipelinecachedataid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
+                hash BYTEA, \
+                pipelinecachedata BYTEA NOT NULL \
+            );"
+        );
 
         await this.pgdb.query("\
-        CREATE TABLE IF NOT EXISTS pipelinecachedata \
-        ( \
-            pipelinecachedataid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
-            hash BYTEA, \
-            pipelinecachedata BYTEA \
-        ); \
-        ");
+            CREATE TABLE IF NOT EXISTS pipelinecaches \
+            ( \
+                pipelinecacheid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
+                projectid INT REFERENCES projects (projectid) ON DELETE CASCADE, \
+                dataid INT REFERENCES pipelinecachedata (pipelinecachedataid) ON DELETE CASCADE, \
+                datetime TIMESTAMP NOT NULL, \
+                versionMajor INT NOT NULL, \
+                versionMinor INT NOT NULL, \
+                versionRevision INT NOT NULL, \
+                versionBuild INT NOT NULL, \
+                stable BOOLEAN DEFAULT false \
+            );"
+        );
+
+        await this.pgdb.query("\
+            CREATE TABLE IF NOT EXISTS stablekeyinfodata \
+            ( \
+                stablekeyinfodataid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
+                hash BYTEA, \
+                stablekeyinfodata BYTEA NOT NULL \
+            );"
+        );
+
+        await this.pgdb.query("\
+            CREATE TABLE IF NOT EXISTS stablekeyinfo \
+            ( \
+                stablekeyinfoid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
+                projectid INT REFERENCES projects (projectid) ON DELETE CASCADE, \
+                dataid INT REFERENCES stablekeyinfodata (stablekeyinfodataid) ON DELETE CASCADE, \
+                datetime TIMESTAMP NOT NULL, \
+                versionMajor INT NOT NULL, \
+                versionMinor INT NOT NULL, \
+                versionRevision INT NOT NULL, \
+                versionBuild INT NOT NULL, \
+                globalkeys BOOLEAN DEFAULT false \
+            );"
+        );
+
     }
 
     async InitialiseMachines()
     {        
+        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS machineprints \
+        //     ( \
+        //         machineprintid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
+        //         fingerprint BYTEA UNIQUE \
+        //     ); \
+        // ");
+
         await this.pgdb.query("CREATE TABLE IF NOT EXISTS machines \
             ( \
                 machineid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
+                orgid INT REFERENCES organisations (orgid) ON DELETE CASCADE, \
                 fingerprint BYTEA UNIQUE, \
                 machinename VARCHAR, \
                 pipelinecacheids INT ARRAY DEFAULT '{}' NOT NULL \
             ); \
         ");
 
-        await this.pgdb.query("CREATE TABLE IF NOT EXISTS user_machine \
-            ( \
-                machineid INT REFERENCES machines (machineid) ON UPDATE CASCADE ON DELETE CASCADE, \
-                ownerid INT REFERENCES auth (userid) ON UPDATE CASCADE, \
-                CONSTRAINT user_machine_key PRIMARY KEY (machineid, ownerid)\
-            ); \
-        ");
+        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS user_machine \
+        //     ( \
+        //         machineid INT REFERENCES machines (machineid) ON UPDATE CASCADE ON DELETE CASCADE, \
+        //         ownerid INT REFERENCES auth (userid) ON UPDATE CASCADE, \
+        //         CONSTRAINT user_machine_key PRIMARY KEY (machineid, ownerid)\
+        //     ); \
+        // ");
     }
 
     async GetAuthByUsername(username: string)
@@ -509,6 +883,17 @@ class PipelineShaderObjectDB
         return this.pgdb.oneOrNone(this.PSGetAuthByToken, [token]);
     }
 
+    async GetProjectIDByUUID(projectuuid: Buffer)
+    {
+        return this.pgdb.oneOrNone(this.PSGetProjectIDByUUID, [projectuuid]);
+    }
+
+    async GetOrgIDByUUID(orguuid: Buffer)
+    {
+        return this.pgdb.oneOrNone(this.PSGetOrgIDByUUID, [orguuid]);
+    }
+
+    
     async GetPipelineDataByToken(token: Buffer)
     {
         return this.pgdb.manyOrNone(this.PSGetPipelineDataByToken, [token]);
@@ -531,20 +916,40 @@ class PipelineShaderObjectDB
     //     return this.pgdb.oneOrNone(this.PSGetUserByUID, [uid]);
     // }
 
-    // async GetMachinesByUID(uid: number)
-    // {
-    //     return this.pgdb.manyOrNone(this.PSGetMachinesByUID, [uid]);
-    // }
+    async GetPermissionsByOrgAndUserIDs(orgid: number, uid: number)
+    {
+        return this.pgdb.oneOrNone(this.PSGetPermissionsByOrgAndUserIDs, [orgid, uid]);
+    }
+
+    async GetPermissionsByOrgUUIDAndUserID(orgid: Buffer, uid: number)
+    {
+        return this.pgdb.oneOrNone(this.PSGetPermissionsByOrgUUIDAndUserID, [orgid, uid]);
+    }
+
+    async GetMachinesByOrgID_ValidatedByUserID(orgid: number, uid: number)
+    {
+        return this.pgdb.manyOrNone(this.PSGetMachinesByOrgID_ValidatedByUserID, [orgid, uid]);
+    }
+
+    async GetMachinesByOrgUUID_ValidatedByUserID(orguuid: Buffer, uid: number)
+    {
+        return this.pgdb.manyOrNone(this.PSGetMachinesByOrgUUID_ValidatedByUserID, [orguuid, uid]);
+    }
+
+    async GetMachinesByProjectUUID_ValidatedByUserID(projectuuid: Buffer, uid: number)
+    {
+        return this.pgdb.manyOrNone(this.PSGetMachinesByProjectUUID_ValidatedByUserID, [projectuuid, uid]);
+    }
 
     async GetMachinesByFingerprint(print: Buffer)
     {
         return this.pgdb.oneOrNone(this.PSGetMachinesByPrint, [print]);
     }
 
-    async GetPipelineCacheByHash(hash: Buffer)
-    {
-        return this.pgdb.oneOrNone(this.PSGetPipelineCacheByHash, [hash]);
-    }
+    // async GetPipelineCacheByHash(hash: Buffer)
+    // {
+    //     return this.pgdb.oneOrNone(this.PSGetPipelineCacheByHash, [hash]);
+    // }
 
     // async GetPipelineCacheByHashShort(hash: Buffer)
     // {
@@ -616,9 +1021,9 @@ class PipelineShaderObjectDB
     //     return this.pgdb.oneOrNone(this.PSDeleteTag, [`'${tags}'`, tags]);
     // }
 
-    async GetPipelineCacheByHashVersionShort(hash: Buffer, vMaj: number, vMin: number, vRev:number, vBuild:number)
+    async GetPipelineCacheByHashVersionProjectShort(hash: Buffer, projectuuid: Buffer, vMaj: number, vMin: number, vRev:number, vBuild:number)
     {
-        return this.pgdb.manyOrNone(this.PSGetPipelineCacheByHashVersionShort, [hash, vMaj, vMin, vRev, vBuild]);
+        return this.pgdb.manyOrNone(this.PSGetPipelineCacheByHashVersionProjectShort, [hash, projectuuid, vMaj, vMin, vRev, vBuild]);
     }
 
     // async RenameTag(oldTag: string, newTag: string)
@@ -651,9 +1056,68 @@ class PipelineShaderObjectDB
     //     return this.pgdb.manyOrNone(this.PSGetPipelineCachesByBoardSearchShort, [boarduid, search]);
     // }
 
+    async GetMachinePermissionsForProjectByUUIDs(projectuuid: Buffer, machineuuid: Buffer, currentDate: Date)
+    {
+        return this.pgdb.oneOrNone(this.PSGetMachinePermissionsForProjectByUUIDs, [projectuuid, machineuuid, currentDate]);
+    }
+
+    async GetCacheDataAfterDate_ValidatedByMachine(projectuuid: Buffer, lookupAfterDate: Date, machineuuid: Buffer, currentDate: Date)
+    {
+        return this.pgdb.manyOrNone(this.PSGetCacheDataAfterDate_ValidatedByMachine, [projectuuid, lookupAfterDate, machineuuid, currentDate]);
+    }
+    
+    async GetPermissionsByProjectUUIDAndUserID(projectid: Buffer, userid: number, currentDate: Date)
+    {
+        return this.pgdb.oneOrNone(this.PSGetPermissionsByProjectUUIDAndUserID, [projectid, userid, currentDate]);
+    }
+
     async AddPipelineCacheToBoard(macid: Buffer, pipeid: number)
     {
         return this.pgdb.none(this.PSAddPipelineCacheToBoard, [macid, pipeid]);
+    }
+
+    async AddUserToOrganisation(orgid: number, userid: number)
+    {
+        //await this.pgdb.none(this.PSAddUserToOrganisation, [orgid, userid]);
+        return this.pgdb.none(this.PSAddUserToOrganisationUserPerms, [orgid, userid]);
+    }
+
+    async ModifyOrgUserPermissions
+    (
+        orgid: number,
+        userid: number,
+        permAdminOrganisation: boolean,
+        permAdminUsers: boolean,
+        permCreateUser: boolean,
+        permDeleteUser: boolean,
+        permEditUser: boolean,
+        permAdminMachines: boolean,
+        permCreateMachines: boolean,
+        permDeleteMachines: boolean,
+        permEditMachines: boolean,
+        permAdminProjects: boolean,
+        permCreateProject: boolean,
+        permDeleteProject: boolean,
+        permEditProject: boolean
+    )
+    {
+        return this.pgdb.none(this.PSModifyOrgUserPermissions, [
+            orgid, 
+            userid,
+            permAdminOrganisation,
+            permAdminUsers,
+            permCreateUser,
+            permDeleteUser,
+            permEditUser,
+            permAdminMachines,
+            permCreateMachines,
+            permDeleteMachines,
+            permEditMachines,
+            permAdminProjects,
+            permCreateProject,
+            permDeleteProject,
+            permEditProject
+        ]);
     }
 
     // async RemovePipelineCacheToBoard(boarduid: number, hash: Buffer)
@@ -702,115 +1166,224 @@ class PipelineShaderObjectDB
     //     return this.pgdb.manyOrNone(this.PSGetTagList, []);
     // }
 
-    async AddPSO(hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string)
+    async AddPSO(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isStable: boolean = false)
     {
-        console.log(hash);
-        console.log(version);
-
         try
         {
-            let vInt = StringToVersion(version);
-
-            let res = await this.pgdb.one("INSERT INTO pipelinecaches (datetime, versionMajor, versionMinor, versionRevision, versionBuild, hash) VALUES ($1, $2, $3, $4, $5, $6) RETURNING pipelinecacheid;", [
-                date,
-                vInt[0],
-                vInt[1],
-                vInt[2],
-                vInt[3],
-                hash
-            ]
-            );
-
-            // Check if data exists
-            let DoesDataForHashExist = await this.GetPipelineCacheDataByHashShort(hash);
-            if(!DoesDataForHashExist)
+            // First, check that machine has permissions for the project
+            let DoesMachineHaveSubmitForProject = await this.GetMachinePermissionsForProjectByUUIDs(projectuuid, machine, new Date());
+            if(DoesMachineHaveSubmitForProject && DoesMachineHaveSubmitForProject.permsubmitcaches)
             {
-                // Make it, it's a new hash
-                let res2 = await this.pgdb.one("INSERT INTO pipelinecachedata (hash, pipelinecachedata) VALUES ($1, $2) RETURNING pipelinecachedataid;", [
-                    hash,
-                    pso
+                let PSODataIdentifier:number = -1;
+                let vInt = StringToVersion(version);
+
+                // Check if data exists
+                let DoesDataForHashExist = await this.GetPipelineCacheDataByHashShort(hash);
+                if(!DoesDataForHashExist)
+                {
+                    // Make it, it's a new hash
+                    let AddData = await this.pgdb.one("INSERT INTO pipelinecachedata (hash, pipelinecachedata) VALUES ($1, $2) RETURNING pipelinecachedataid;", [
+                        hash,
+                        pso
+                    ]
+                    );
+
+                    console.log(`Added Data ${AddData["pipelinecachedataid"]}`)
+
+                    PSODataIdentifier = AddData.pipelinecachedataid;
+                }
+                else
+                {
+                    PSODataIdentifier = DoesDataForHashExist.pipelinecachedataid;
+                }
+                console.log(PSODataIdentifier);
+
+
+                // Okay, Get projectID
+                let ProjectIdentifier = await this.GetProjectIDByUUID(projectuuid);
+                if(ProjectIdentifier)
+                {
+                    let res = await this.pgdb.one("INSERT INTO pipelinecaches (projectid, dataid, datetime, versionMajor, versionMinor, versionRevision, versionBuild, stable) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING pipelinecacheid;", [
+                        ProjectIdentifier.projectid,
+                        PSODataIdentifier,
+                        date,
+                        vInt[0],
+                        vInt[1],
+                        vInt[2],
+                        vInt[3],
+                        isStable
+                    ]
+                    );
+    
+            
+    
+                    console.log(`Added ${res["pipelinecacheid"]}`)
+    
+                    // Pump
+                    this.AddPipelineCacheToBoard(machine, res["pipelinecacheid"]);
+    
+                
+    
+                    return 0;
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+
+            return -2;            
+        }
+        catch (Exception)
+        {
+            console.log(Exception);
+            return -10;
+        }
+    }
+
+    async AddMachine(userid:number, machinename: string, owningOrg: Buffer)
+    {
+        try
+        {
+            let CheckPerm = await this.GetPermissionsByOrgUUIDAndUserID(owningOrg, userid);
+            if(CheckPerm && CheckPerm.permcreatemachines)
+            {
+                let uuid: Buffer = crypto.randomBytes(32);
+                let uuidIndex = 0;
+                for(uuidIndex = 0; uuidIndex < 10; ++uuidIndex)
+                {
+                    let uuidCheck = await this.pgdb.oneOrNone("SELECT fingerprint FROM machines WHERE fingerprint = $1", [uuid]);
+                    if(uuidCheck)
+                    {
+                        // Okay. Might as well warn about this
+                        console.log(`[INFO] UUID Collision. Generating a new UUID for machine ${machinename}`);
+                        uuid = crypto.randomBytes(32);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                if(uuidIndex == 10)
+                {
+                    throw new Error("UUID Unique was not satisfied!");
+                }
+
+                //
+                let OrgIdent = await this.GetOrgIDByUUID(owningOrg);
+
+                // Add
+                let res = await this.pgdb.one("INSERT INTO machines (orgid, fingerprint, machinename) VALUES ($1, $2, $3) RETURNING machineid;", [
+                    OrgIdent.orgid,
+                    uuid,
+                    machinename
+                ]
+                );
+                return 0;
+            }     
+
+            return -2;
+        }
+        catch (Exception)
+        {
+            console.log(Exception);
+            return -10;
+        }
+    }
+
+    async AddProject(userid:number, displayname: string, owningOrg: Buffer)
+    {
+        try
+        {
+            // Check userid has permcreateproject for org
+            let CheckPerm = await this.GetPermissionsByOrgUUIDAndUserID(owningOrg, userid);
+            if(CheckPerm && CheckPerm.permcreateproject)
+            {
+                // We can. so do an insert
+                // Check our UUID is unique
+                let uuid: Buffer = crypto.randomBytes(32);
+                let uuidIndex = 0;
+                for(uuidIndex = 0; uuidIndex < 10; ++uuidIndex)
+                {
+                    let uuidCheck = await this.pgdb.oneOrNone("SELECT projectid FROM projects WHERE uuid = $1", [uuid]);
+                    if(uuidCheck)
+                    {
+                        // Okay. Might as well warn about this
+                        console.log(`[INFO] UUID Collision. Generating a new UUID for project ${displayname}`);
+                        uuid = crypto.randomBytes(32);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                if(uuidIndex == 10)
+                {
+                    throw new Error("UUID Unique was not satisfied!");
+                }
+
+                
+
+                //
+                let OrgIdent = await this.GetOrgIDByUUID(owningOrg);
+
+                // Add
+                let res = await this.pgdb.one("INSERT INTO projects (orgid, displayname, uuid) VALUES ($1, $2, $3) RETURNING projectid;", [
+                    OrgIdent.orgid,
+                    displayname,
+                    uuid
                 ]
                 );
 
-                console.log(`Added Data ${res2["pipelinecachedataid"]}`)
-            }            
-
-            console.log(`Added ${res["pipelinecacheid"]}`)
-
-            // Pump
-            this.AddPipelineCacheToBoard(machine, res["pipelinecacheid"]);
-
-          
-
-            return true;
+                return 0;
+            }
+            return -2;
         }
         catch (Exception)
         {
             console.log(Exception);
-            return false;
-        }
-    }
-
-    async AddPipelineCache(hash: Buffer, perceptualHash: Buffer, width: number, height: number, loadPath: string, tags: string)
-    {
-        console.log(hash);
-        try
-        {
-            let res = await this.pgdb.one("INSERT INTO pipelinecaches (normalHash, perceptualHash, width, height, path, tags) VALUES ($1, $2, $3, $4, $5, $6) RETURNING pipelinecacheid;", [
-                hash, 
-                perceptualHash,
-                width,
-                height,
-                loadPath,
-                tags
-            ]
-            );
-          
-
-            return true;
-        }
-        catch (Exception)
-        {
-            console.log(Exception);
-            return false;
-        }
-    }
-
-    async AddMachine(userid:number, machinename: string, fingerprint: Buffer)
-    {
-        try
-        {
-            let res = await this.pgdb.one("INSERT INTO machines (fingerprint, machinename) VALUES ($1, $2) RETURNING machineid;", [
-                fingerprint,
-                machinename
-            ]
-            );
-
-            let res2 = await this.pgdb.one("INSERT INTO user_machine (machineid, ownerid) VALUES ($1, $2) RETURNING machineid;", [
-                res.machineid, 
-                userid
-            ]
-            );         
-
-            return true;
-        }
-        catch (Exception)
-        {
-            console.log(Exception);
-            return false;
+            return -10;
         }
     }
 
 
-    async AddUser(username: string, salt, key, displayname: string = "", permRead: boolean = false, permWrite: boolean = true)
+    async AddUser(username: string, salt, key, displayname: string = "")
     {
         try
         {
-            let res = await this.pgdb.one("INSERT INTO auth (username, password, salt, tokens) VALUES ($1, $2, $3, $4) RETURNING userid;", [
+            if (displayname.length == 0)
+            {
+                displayname = username;
+            }
+
+            // First Check our UUID is unique
+            let uuid: Buffer = crypto.randomBytes(32);
+            let uuidIndex = 0;
+            for(uuidIndex = 0; uuidIndex < 10; ++uuidIndex)
+            {
+                let uuidCheck = await this.pgdb.oneOrNone("SELECT orgid FROM organisations WHERE uuid = $1", [uuid]);
+                if(uuidCheck)
+                {
+                    // Okay. Might as well warn about this
+                    console.log(`[INFO] UUID Collision. Generating a new UUID for ${username}`);
+                    uuid = crypto.randomBytes(32);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if(uuidIndex == 10)
+            {
+                throw new Error("UUID Unique was not satisfied!");
+            }
+
+            let res = await this.pgdb.one("INSERT INTO auth (username, password, salt, tokens) VALUES ($1, $2, $3, ARRAY[$4::bytea]) RETURNING userid;", [
                 username, 
                 key,
                 salt,
-                crypto.randomBytes(32) 
+                crypto.randomBytes(32)
             ]
             );
 
@@ -820,13 +1393,48 @@ class PipelineShaderObjectDB
             // ]
             // );
 
-            let res2 = await this.pgdb.one("INSERT INTO users (userid, displayname, permissionLevelRead, permissionLevelWrite) VALUES ($1, $2, $3, $4) RETURNING displayname;", [
+            let res2 = await this.pgdb.one("INSERT INTO users (userid, displayname) VALUES ($1, $2) RETURNING displayname;", [
                 res.userid, 
-                displayname,
-                permRead,
-                permWrite
+                displayname
             ]
             );
+
+            // Create User Organisation
+            // Check UUID is unique
+
+            let res3 = await this.pgdb.one("INSERT INTO organisations (displayname, uuid) VALUES ($1, $2) RETURNING orgid;",
+            [
+                displayname,
+                uuid
+            ]
+            );
+
+            if(res && res3)
+            {
+                // User
+                await this.AddUserToOrganisation(res3.orgid, res.userid);
+                
+                // Grant full perms
+                await this.ModifyOrgUserPermissions(
+                    res3.orgid,
+                    res.userid,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true
+                    );
+
+            }
+
 
             return true;
         }
