@@ -1,6 +1,8 @@
 /node_modules/
 /public/build/
 /build/
+package-lock.json
+*.upipelinecache
 
 .DS_Store
 
