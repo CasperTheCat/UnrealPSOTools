@@ -23,7 +23,14 @@ function StringToVersion(version: string)
     {
         if (i < vString.length)
         {
-            vInt.push(parseInt(vString[i]));
+            try
+            {
+                vInt.push(parseInt(vString[i]));
+            }
+            catch (Exception)
+            {
+                vInt.push(0);
+            }
         }
         else
         {
@@ -34,5 +41,12 @@ function StringToVersion(version: string)
     return vInt;
 }
 
-export {HashOfBuffer, StringToVersion}
+let ShaderKeyTypes = [
+    "recorded",
+    "stable",
+    "projectshaderinfo",
+    "globalshaderinfo"
+];
+
+export {ShaderKeyTypes, HashOfBuffer, StringToVersion}
 

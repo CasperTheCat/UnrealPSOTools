@@ -69,12 +69,12 @@ class PipelineShaderObjectDB
     //     }
     // );
 
-    // PSGetUserByUID = new PreparedStatement(
-    //     {
-    //         name: "PSGetUserByUID",
-    //         text: "SELECT * FROM users WHERE userid = $1"
-    //     }
-    // );
+    PSGetUserByUID = new PreparedStatement(
+        {
+            name: "PSGetUserByUID",
+            text: "SELECT * FROM users WHERE userid = $1"
+        }
+    );
 
     // PSGetMachineReferencesByUID = new PreparedStatement(
     //     {
@@ -167,6 +167,210 @@ class PipelineShaderObjectDB
                 pipelinecachedata.pipelinecachedataid = pipelinecaches.dataid AND \
                 pipelinecaches.datetime > $2 AND \
                 pipelinecaches.projectid = projects.projectid AND \
+                projects.uuid = $1 AND \
+                machines.fingerprint = $3 AND \
+                project_machine_perms.machineid = machines.machineid AND \
+                project_machine_perms.projectid = projects.projectid AND \
+                project_machine_perms.validfrom < $4 AND \
+                project_machine_perms.validuntil > $4 AND \
+                project_machine_perms.permpullcaches = true \
+            "
+        }
+    );
+
+    PSGetCacheDataAfterDate_ValidatedByMachinePlatformModel = new PreparedStatement(
+        {
+            name: "PSGetCacheDataAfterDate_ValidatedByMachinePlatformModel",
+            text: "SELECT DISTINCT\
+                pipelinecachedata.pipelinecachedata, \
+                pipelinecaches.versionMajor, \
+                pipelinecaches.versionMinor, \
+                pipelinecaches.versionRevision, \
+                pipelinecaches.versionBuild \
+            FROM \
+                pipelinecachedata, pipelinecaches, project_machine_perms, machines, projects \
+            WHERE \
+                pipelinecachedata.pipelinecachedataid = pipelinecaches.dataid AND \
+                pipelinecaches.datetime > $2 AND \
+                pipelinecaches.platform = $5 AND \
+                pipelinecaches.shaderModel = $6 AND \
+                pipelinecaches.projectid = projects.projectid AND \
+                projects.uuid = $1 AND \
+                machines.fingerprint = $3 AND \
+                project_machine_perms.machineid = machines.machineid AND \
+                project_machine_perms.projectid = projects.projectid AND \
+                project_machine_perms.validfrom < $4 AND \
+                project_machine_perms.validuntil > $4 AND \
+                project_machine_perms.permpullcaches = true \
+            "
+        }
+    );
+
+    PSGetInfoDataAfterDate_ValidatedByMachine = new PreparedStatement(
+        {
+            name: "PSGetInfoDataAfterDate_ValidatedByMachine",
+            text: "SELECT DISTINCT\
+                stablekeyinfodata.stablekeyinfodata, \
+                stablekeyinfos.versionMajor, \
+                stablekeyinfos.versionMinor, \
+                stablekeyinfos.versionRevision, \
+                stablekeyinfos.versionBuild \
+            FROM \
+                stablekeyinfodata, stablekeyinfos, project_machine_perms, machines, projects \
+            WHERE \
+                stablekeyinfodata.stablekeyinfodataid = stablekeyinfos.dataid AND \
+                stablekeyinfos.datetime > $2 AND \
+                stablekeyinfos.projectid = projects.projectid AND \
+                projects.uuid = $1 AND \
+                machines.fingerprint = $3 AND \
+                project_machine_perms.machineid = machines.machineid AND \
+                project_machine_perms.projectid = projects.projectid AND \
+                project_machine_perms.validfrom < $4 AND \
+                project_machine_perms.validuntil > $4 AND \
+                project_machine_perms.permpullcaches = true \
+            "
+        }
+    );
+
+    PSGetInfoDataAfterVersion_ValidatedByMachine = new PreparedStatement(
+        {
+            name: "PSGetInfoDataAfterVersion_ValidatedByMachine",
+            text: "SELECT DISTINCT\
+                stablekeyinfodata.stablekeyinfodata, \
+                stablekeyinfos.versionMajor, \
+                stablekeyinfos.versionMinor, \
+                stablekeyinfos.versionRevision, \
+                stablekeyinfos.versionBuild \
+            FROM \
+                stablekeyinfodata, stablekeyinfos, project_machine_perms, machines, projects \
+            WHERE \
+                stablekeyinfodata.stablekeyinfodataid = stablekeyinfos.dataid AND \
+                stablekeyinfos.versionMajor >= $3 AND \
+                stablekeyinfos.versionMinor >= $4 AND \
+                stablekeyinfos.versionRevision >= $5 AND \
+                stablekeyinfos.versionBuild >= $6 AND \
+                stablekeyinfos.projectid = projects.projectid AND \
+                projects.uuid = $1 AND \
+                machines.fingerprint = $2 AND \
+                project_machine_perms.machineid = machines.machineid AND \
+                project_machine_perms.projectid = projects.projectid AND \
+                project_machine_perms.validfrom < $7 AND \
+                project_machine_perms.validuntil > $7 AND \
+                project_machine_perms.permpullcaches = true \
+            "
+        }
+    );
+
+    PSGetCacheDataAfterVersion_ValidatedByMachine = new PreparedStatement(
+        {
+            name: "PSGetCacheDataAfterVersion_ValidatedByMachine",
+            text: "SELECT DISTINCT\
+                pipelinecachedata.pipelinecachedata, \
+                pipelinecaches.versionMajor, \
+                pipelinecaches.versionMinor, \
+                pipelinecaches.versionRevision, \
+                pipelinecaches.versionBuild \
+            FROM \
+                pipelinecachedata, pipelinecaches, project_machine_perms, machines, projects \
+            WHERE \
+                pipelinecachedata.pipelinecachedataid = pipelinecaches.dataid AND \
+                pipelinecaches.versionMajor >= $3 AND \
+                pipelinecaches.versionMinor >= $4 AND \
+                pipelinecaches.versionRevision >= $5 AND \
+                pipelinecaches.versionBuild >= $6 AND \
+                pipelinecaches.projectid = projects.projectid AND \
+                projects.uuid = $1 AND \
+                machines.fingerprint = $2 AND \
+                project_machine_perms.machineid = machines.machineid AND \
+                project_machine_perms.projectid = projects.projectid AND \
+                project_machine_perms.validfrom < $7 AND \
+                project_machine_perms.validuntil > $7 AND \
+                project_machine_perms.permpullcaches = true \
+            "
+        }
+    );
+
+    PSGetCacheDataAfterVersion_ValidatedByMachinePlatformModel = new PreparedStatement(
+        {
+            name: "PSGetCacheDataAfterVersion_ValidatedByMachinePlatformModel",
+            text: "SELECT DISTINCT\
+                pipelinecachedata.pipelinecachedata, \
+                pipelinecaches.versionMajor, \
+                pipelinecaches.versionMinor, \
+                pipelinecaches.versionRevision, \
+                pipelinecaches.versionBuild \
+            FROM \
+                pipelinecachedata, pipelinecaches, project_machine_perms, machines, projects \
+            WHERE \
+                pipelinecachedata.pipelinecachedataid = pipelinecaches.dataid AND \
+                pipelinecaches.versionMajor >= $3 AND \
+                pipelinecaches.versionMinor >= $4 AND \
+                pipelinecaches.versionRevision >= $5 AND \
+                pipelinecaches.versionBuild >= $6 AND \
+                pipelinecaches.projectid = projects.projectid AND \
+                pipelinecaches.platform = $8 AND \
+                pipelinecaches.shaderModel = $9 AND \
+                projects.uuid = $1 AND \
+                machines.fingerprint = $2 AND \
+                project_machine_perms.machineid = machines.machineid AND \
+                project_machine_perms.projectid = projects.projectid AND \
+                project_machine_perms.validfrom < $7 AND \
+                project_machine_perms.validuntil > $7 AND \
+                project_machine_perms.permpullcaches = true \
+            "
+        }
+    );
+
+    PSGetInfoDataAfterVersion_ValidatedByMachinePlatformModel = new PreparedStatement(
+        {
+            name: "PSGetInfoDataAfterVersion_ValidatedByMachinePlatformModel",
+            text: "SELECT DISTINCT\
+                stablekeyinfodata.stablekeyinfodata, \
+                stablekeyinfos.versionMajor, \
+                stablekeyinfos.versionMinor, \
+                stablekeyinfos.versionRevision, \
+                stablekeyinfos.versionBuild \
+            FROM \
+                stablekeyinfodata, stablekeyinfos, project_machine_perms, machines, projects \
+            WHERE \
+                stablekeyinfodata.stablekeyinfodataid = stablekeyinfos.dataid AND \
+                stablekeyinfos.versionMajor >= $3 AND \
+                stablekeyinfos.versionMinor >= $4 AND \
+                stablekeyinfos.versionRevision >= $5 AND \
+                stablekeyinfos.versionBuild >= $6 AND \
+                stablekeyinfos.projectid = projects.projectid AND \
+                stablekeyinfos.platform = $8 AND \
+                stablekeyinfos.shaderModel = $9 AND \
+                projects.uuid = $1 AND \
+                machines.fingerprint = $2 AND \
+                project_machine_perms.machineid = machines.machineid AND \
+                project_machine_perms.projectid = projects.projectid AND \
+                project_machine_perms.validfrom < $7 AND \
+                project_machine_perms.validuntil > $7 AND \
+                project_machine_perms.permpullcaches = true \
+            "
+        }
+    );
+
+    
+
+    PSGetInfoDataAfterDate_ValidatedByMachinePlatformModel = new PreparedStatement(
+        {
+            name: "PSGetInfoDataAfterDate_ValidatedByMachinePlatformModel",
+            text: "SELECT DISTINCT\
+                stablekeyinfodata.stablekeyinfodata, \
+                stablekeyinfos.versionMajor, \
+                stablekeyinfos.versionMinor, \
+                stablekeyinfos.versionRevision, \
+                stablekeyinfos.versionBuild \
+            FROM \
+                stablekeyinfodata, stablekeyinfos, project_machine_perms, machines, projects \
+            WHERE \
+                stablekeyinfodata.stablekeyinfodataid = stablekeyinfos.dataid AND \
+                stablekeyinfos.datetime > $2 AND \
+                pipelinecaches.platform = $5 AND \
+                pipelinecaches.shaderModel = $6 AND \
+                stablekeyinfos.projectid = projects.projectid AND \
                 projects.uuid = $1 AND \
                 machines.fingerprint = $3 AND \
                 project_machine_perms.machineid = machines.machineid AND \
@@ -279,6 +483,13 @@ class PipelineShaderObjectDB
         }
     );
 
+    PSGetShaderInfoDataByHashShort = new PreparedStatement(
+        {
+            name: "PSGetShaderInfoDataByHashShort",
+            text: "SELECT stablekeyinfodataid FROM stablekeyinfodata WHERE hash = $1"
+        }
+    );
+
     // PSGetPipelineCacheByHashShort = new PreparedStatement(
     //     {
     //         name: "PSGetPipelineCacheByHashShort",
@@ -296,6 +507,24 @@ class PipelineShaderObjectDB
                 pipelinecachedata.hash = $1 AND \
                 pipelinecaches.dataid = pipelinecachedata.pipelinecachedataid AND \
                 pipelinecaches.projectid = projects.projectid AND \
+                projects.uuid = $2 AND \
+                versionMajor = $3 AND \
+                versionMinor = $4 AND \
+                versionRevision = $5 AND \
+                versionBuild = $6"
+        }
+    );
+
+    PSGetStableKeyInfoByHashVersionProjectShort = new PreparedStatement(
+        {
+            name: "PSGetStableKeyInfoByHashVersionProjectShort",
+            text: "SELECT stablekeyinfos.stablekeyinfoid, stablekeyinfos.datetime \
+            FROM \
+                stablekeyinfos, stablekeyinfodata, projects \
+            WHERE \
+                stablekeyinfodata.hash = $1 AND \
+                stablekeyinfos.dataid = stablekeyinfodata.stablekeyinfodataid AND \
+                stablekeyinfos.projectid = projects.projectid AND \
                 projects.uuid = $2 AND \
                 versionMajor = $3 AND \
                 versionMinor = $4 AND \
@@ -596,6 +825,7 @@ class PipelineShaderObjectDB
                 drop table if exists users cascade; \
                 drop table if exists auth cascade; \
                 drop table if exists organisations cascade; \
+                drop table if exists stablekeyinfos cascade; \
             ");
             // console.log("[WARN] Clearing Database");
             // await this.pgdb.query("DROP TABLE IF EXISTS organisations;");
@@ -649,6 +879,25 @@ class PipelineShaderObjectDB
 
         console.log(res);
     }
+
+    async InitialiseSession()
+    {        
+        let res = await this.pgdb.query("CREATE TABLE IF NOT EXISTS session \
+            ( \
+                sid varchar NOT NULL COLLATE \"default\",\
+                sess json NOT NULL,\
+                expire timestamp(6) NOT NULL,\
+                CONSTRAINT session_pkey PRIMARY KEY (sid) NOT DEFERRABLE INITIALLY IMMEDIATE\
+            )\
+            WITH (OIDS=FALSE);\
+        ");
+
+        let res2 = await this.pgdb.query("CREATE INDEX IF NOT EXISTS \"IDX_session_expire\" ON session (expire);");
+
+        console.log(res);
+        console.log(res2);
+    }
+
 
     async InitialiseUsers()
     {
@@ -810,6 +1059,8 @@ class PipelineShaderObjectDB
                 pipelinecacheid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
                 projectid INT REFERENCES projects (projectid) ON DELETE CASCADE, \
                 dataid INT REFERENCES pipelinecachedata (pipelinecachedataid) ON DELETE CASCADE, \
+                platform VARCHAR(24),\
+                shaderModel VARCHAR(24),\
                 datetime TIMESTAMP NOT NULL, \
                 versionMajor INT NOT NULL, \
                 versionMinor INT NOT NULL, \
@@ -829,17 +1080,19 @@ class PipelineShaderObjectDB
         );
 
         await this.pgdb.query("\
-            CREATE TABLE IF NOT EXISTS stablekeyinfo \
+            CREATE TABLE IF NOT EXISTS stablekeyinfos \
             ( \
                 stablekeyinfoid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
                 projectid INT REFERENCES projects (projectid) ON DELETE CASCADE, \
                 dataid INT REFERENCES stablekeyinfodata (stablekeyinfodataid) ON DELETE CASCADE, \
+                platform VARCHAR(24),\
+                shaderModel VARCHAR(24),\
                 datetime TIMESTAMP NOT NULL, \
                 versionMajor INT NOT NULL, \
                 versionMinor INT NOT NULL, \
                 versionRevision INT NOT NULL, \
                 versionBuild INT NOT NULL, \
-                globalkeys BOOLEAN DEFAULT false \
+                global BOOLEAN DEFAULT false \
             );"
         );
 
@@ -911,10 +1164,10 @@ class PipelineShaderObjectDB
     //     return this.pgdb.oneOrNone(this.PSGetUserByUsername, [username]);
     // }
 
-    // async GetUserByUID(uid: number)
-    // {
-    //     return this.pgdb.oneOrNone(this.PSGetUserByUID, [uid]);
-    // }
+    async GetUserByUID(uid: number)
+    {
+        return this.pgdb.oneOrNone(this.PSGetUserByUID, [uid]);
+    }
 
     async GetPermissionsByOrgAndUserIDs(orgid: number, uid: number)
     {
@@ -996,6 +1249,11 @@ class PipelineShaderObjectDB
         return this.pgdb.oneOrNone(this.PSGetPipelineCacheDataByHashShort, [hash]);
     }
 
+    async GetShaderInfoDataByHashShort(hash: Buffer)
+    {
+        return this.pgdb.oneOrNone(this.PSGetShaderInfoDataByHashShort, [hash]);
+    }
+
     // async GetAllPipelineCachesMark()
     // {
     //     return this.pgdb.manyOrNone(this.PSGetAllPipelineCachesMark, []);
@@ -1025,6 +1283,13 @@ class PipelineShaderObjectDB
     {
         return this.pgdb.manyOrNone(this.PSGetPipelineCacheByHashVersionProjectShort, [hash, projectuuid, vMaj, vMin, vRev, vBuild]);
     }
+
+    async GetStableKeyInfoByHashVersionProjectShort(hash: Buffer, projectuuid: Buffer, vMaj: number, vMin: number, vRev:number, vBuild:number)
+    {
+        return this.pgdb.manyOrNone(this.PSGetStableKeyInfoByHashVersionProjectShort, [hash, projectuuid, vMaj, vMin, vRev, vBuild]);
+    }
+
+    
 
     // async RenameTag(oldTag: string, newTag: string)
     // {
@@ -1065,6 +1330,43 @@ class PipelineShaderObjectDB
     {
         return this.pgdb.manyOrNone(this.PSGetCacheDataAfterDate_ValidatedByMachine, [projectuuid, lookupAfterDate, machineuuid, currentDate]);
     }
+
+    async GetInfoDataAfterDate_ValidatedByMachine(projectuuid: Buffer, lookupAfterDate: Date, machineuuid: Buffer, currentDate: Date)
+    {
+        return this.pgdb.manyOrNone(this.PSGetInfoDataAfterDate_ValidatedByMachine, [projectuuid, lookupAfterDate, machineuuid, currentDate]);
+    }
+
+    async GetCacheDataAfterDate_ValidatedByMachinePlatformModel(projectuuid: Buffer, lookupAfterDate: Date, machineuuid: Buffer, currentDate: Date, platform: string, shaderModel: string)
+    {
+        return this.pgdb.manyOrNone(this.PSGetCacheDataAfterDate_ValidatedByMachinePlatformModel, [projectuuid, lookupAfterDate, machineuuid, currentDate, platform, shaderModel]);
+    }
+
+    async GetInfoDataAfterDate_ValidatedByMachinePlatformModel(projectuuid: Buffer, lookupAfterDate: Date, machineuuid: Buffer, currentDate: Date, platform: string, shaderModel: string)
+    {
+        return this.pgdb.manyOrNone(this.PSGetInfoDataAfterDate_ValidatedByMachinePlatformModel, [projectuuid, lookupAfterDate, machineuuid, currentDate, platform, shaderModel]);
+    }
+
+    async GetInfoDataAfterVersion_ValidatedByMachine(projectuuid: Buffer, machineuuid: Buffer, versionMajor: number, versionMinor: number, versionRevision: number, versionBuild: number, currentDate: Date)
+    {
+        return this.pgdb.manyOrNone(this.PSGetInfoDataAfterVersion_ValidatedByMachine, [projectuuid, machineuuid, versionMajor, versionMinor, versionRevision, versionBuild, currentDate]);
+    }
+
+    async GetCacheDataAfterVersion_ValidatedByMachine(projectuuid: Buffer, machineuuid: Buffer, versionMajor: number, versionMinor: number, versionRevision: number, versionBuild: number, currentDate: Date)
+    {
+        return this.pgdb.manyOrNone(this.PSGetCacheDataAfterVersion_ValidatedByMachine, [projectuuid, machineuuid, versionMajor, versionMinor, versionRevision, versionBuild, currentDate]);
+    }
+
+    async GetCacheDataAfterVersion_ValidatedByMachinePlatformModel(projectuuid: Buffer, machineuuid: Buffer, versionMajor: number, versionMinor: number, versionRevision: number, versionBuild: number, currentDate: Date, platform: string, shaderModel: string)
+    {
+        return this.pgdb.manyOrNone(this.PSGetCacheDataAfterVersion_ValidatedByMachinePlatformModel, [projectuuid, machineuuid, versionMajor, versionMinor, versionRevision, versionBuild, currentDate, platform, shaderModel]);
+    }
+
+    async GetInfoDataAfterVersion_ValidatedByMachinePlatformModel(projectuuid: Buffer, machineuuid: Buffer, versionMajor: number, versionMinor: number, versionRevision: number, versionBuild: number, currentDate: Date, platform: string, shaderModel: string)
+    {
+        return this.pgdb.manyOrNone(this.PSGetInfoDataAfterVersion_ValidatedByMachinePlatformModel, [projectuuid, machineuuid, versionMajor, versionMinor, versionRevision, versionBuild, currentDate, platform, shaderModel]);
+    }
+
+    
     
     async GetPermissionsByProjectUUIDAndUserID(projectid: Buffer, userid: number, currentDate: Date)
     {
@@ -1166,7 +1468,80 @@ class PipelineShaderObjectDB
     //     return this.pgdb.manyOrNone(this.PSGetTagList, []);
     // }
 
-    async AddPSO(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isStable: boolean = false)
+    async AddKeyInfo(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isGlobalKey: boolean = false, optionalPlatform: string = "", optionalSM: string = "")
+    {
+        try
+        {
+            // First, check that machine has permissions for the project
+            let DoesMachineHaveSubmitForProject = await this.GetMachinePermissionsForProjectByUUIDs(projectuuid, machine, new Date());
+            if(DoesMachineHaveSubmitForProject && DoesMachineHaveSubmitForProject.permsubmitcaches)
+            {
+                let PSODataIdentifier:number = -1;
+                let vInt = StringToVersion(version);
+
+                // Check if data exists
+                let DoesDataForHashExist = await this.GetShaderInfoDataByHashShort(hash);
+                if(!DoesDataForHashExist)
+                {
+                    // Make it, it's a new hash
+                    let AddData = await this.pgdb.one("INSERT INTO stablekeyinfodata (hash, stablekeyinfodata) VALUES ($1, $2) RETURNING stablekeyinfodataid;", [
+                        hash,
+                        pso
+                    ]
+                    );
+
+                    //console.log(`Added Data ${AddData["pipelinecachedataid"]}`)
+
+                    PSODataIdentifier = AddData.stablekeyinfodataid;
+                }
+                else
+                {
+                    PSODataIdentifier = DoesDataForHashExist.stablekeyinfodataid;
+                }
+                console.log(PSODataIdentifier);
+
+
+                // Okay, Get projectID
+                let ProjectIdentifier = await this.GetProjectIDByUUID(projectuuid);
+                if(ProjectIdentifier)
+                {
+                    let res = await this.pgdb.one("INSERT INTO stablekeyinfos (projectid, dataid, datetime, versionMajor, versionMinor, versionRevision, versionBuild, global) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING stablekeyinfoid;", [
+                        ProjectIdentifier.projectid,
+                        PSODataIdentifier,
+                        date,
+                        vInt[0],
+                        vInt[1],
+                        vInt[2],
+                        vInt[3],
+                        isGlobalKey,
+                        optionalPlatform,
+                        optionalSM
+                    ]
+                    );
+    
+                    //console.log(`Added ${res["pipelinecacheid"]}`)
+    
+                    // Pump
+                    //this.AddPipelineCacheToBoard(machine, res["pipelinecacheid"]);
+    
+                    return 0;
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+
+            return -2;            
+        }
+        catch (Exception)
+        {
+            console.log(Exception);
+            return -10;
+        }
+    }
+
+    async AddPSO(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isStable: boolean = false, optionalPlatform: string = "", optionalSM: string = "")
     {
         try
         {
@@ -1188,7 +1563,7 @@ class PipelineShaderObjectDB
                     ]
                     );
 
-                    console.log(`Added Data ${AddData["pipelinecachedataid"]}`)
+                    //console.log(`Added Data ${AddData["pipelinecachedataid"]}`)
 
                     PSODataIdentifier = AddData.pipelinecachedataid;
                 }
@@ -1203,7 +1578,7 @@ class PipelineShaderObjectDB
                 let ProjectIdentifier = await this.GetProjectIDByUUID(projectuuid);
                 if(ProjectIdentifier)
                 {
-                    let res = await this.pgdb.one("INSERT INTO pipelinecaches (projectid, dataid, datetime, versionMajor, versionMinor, versionRevision, versionBuild, stable) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING pipelinecacheid;", [
+                    let res = await this.pgdb.one("INSERT INTO pipelinecaches (projectid, dataid, datetime, versionMajor, versionMinor, versionRevision, versionBuild, stable, platform, shaderModel) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING pipelinecacheid;", [
                         ProjectIdentifier.projectid,
                         PSODataIdentifier,
                         date,
@@ -1211,18 +1586,16 @@ class PipelineShaderObjectDB
                         vInt[1],
                         vInt[2],
                         vInt[3],
-                        isStable
+                        isStable,
+                        optionalPlatform,
+                        optionalSM
                     ]
                     );
     
-            
-    
-                    console.log(`Added ${res["pipelinecacheid"]}`)
+                    //console.log(`Added ${res["pipelinecacheid"]}`)
     
                     // Pump
                     this.AddPipelineCacheToBoard(machine, res["pipelinecacheid"]);
-    
-                
     
                     return 0;
                 }

@@ -4,6 +4,7 @@
 import type { PipelineShaderObjectDB } from "./db.js";
 import { HashOfBuffer, StringToVersion } from './helpers.js';
 
+
 // Also fetch the user's boards.
 // This is needed the moment after login flow
 // But it's smaller
@@ -33,14 +34,22 @@ async function getMachinesForOwner(req, res, db: PipelineShaderObjectDB)
 
 async function getUserInfo(req, res, db)
 {
-    console.log("[INFO] Requesting User Data for user " + req.user.toString());
     try
     {
-        let userData = await db.GetUserByUID(req.user);
+        if("user" in req)
+        {
+            console.log("[INFO] Requesting User Data for user " + req.user.toString());
+            let userData = await db.GetUserByUID(req.user);
 
-        userData = JSON.stringify(userData);
+            userData = JSON.stringify(userData);
 
-        res.status(200).send(userData);//`{ "userdata": ${userData} }`);
+            res.status(200).send(userData);//`{ "userdata": ${userData} }`);
+        }
+        else
+        {
+            res.sendStatus(400);
+        }
+
     }
     catch (Except)
     {
@@ -191,6 +200,97 @@ async function getAllPCOsForUser(req, res, db)
     }
 }
 
+
+async function AddNewPSOToProjectByUUIDs(psoDB: PipelineShaderObjectDB, projectuuid: Buffer, machineuuid: Buffer, version:string, data: Buffer, isStableKey: boolean, optionalPlatform: string = "", optionalSM: string = "")
+{
+    try
+    {
+        // Assert
+        // Take Data, hash it, and insert
+        // TODO: Try to parse it
+        // HCACEPIP
+        let short = data.subarray(0,8);
+
+        if (short.equals(Buffer.from("HCACEPIP")))
+        {
+            let hash = await HashOfBuffer(data);
+
+            let datenow = new Date();
+
+            // Check Machine Exists
+            let DoesMachineExist = await psoDB.GetMachinesByFingerprint(machineuuid);
+            let vInts = StringToVersion(version);
+            
+
+            let result = 1;
+            if (DoesMachineExist)
+            {
+
+                result = await psoDB.AddPSO(projectuuid, hash, data, datenow, machineuuid, version, isStableKey, optionalPlatform, optionalSM); 
+                return result;
+            }
+            else
+            {
+                //console.log(`Machine: ${DoesMachineExist}`);
+                return -1;
+            }
+        }
+        else
+        {
+            return -11;
+        }
+    }
+    catch (Exception)
+    {
+        return -10;
+    }
+}
+
+async function AddNewShaderInfoToProjectByUUIDs(psoDB: PipelineShaderObjectDB, projectuuid: Buffer, machineuuid: Buffer, version:string, data: Buffer, isGlobalKey: boolean, optionalPlatform: string = "", optionalSM: string = "")
+{
+    try
+    {
+        // Assert
+        // Take Data, hash it, and insert
+        // TODO: Try to parse it
+        // STBLSHDR
+        let short = data.subarray(0,8);
+
+        if (short.equals(Buffer.from("STBLSHDR")))
+        {
+            let hash = await HashOfBuffer(data);
+
+            let datenow = new Date();
+
+            // Check Machine Exists
+            let DoesMachineExist = await psoDB.GetMachinesByFingerprint(machineuuid);
+            let vInts = StringToVersion(version);
+            
+
+            let result = 1;
+            if (DoesMachineExist)
+            {
+                result = await psoDB.AddKeyInfo(projectuuid, hash, data, datenow, machineuuid, version, isGlobalKey, optionalPlatform, optionalSM); 
+                return result;
+            }
+            else
+            {
+                //console.log(`Machine: ${DoesMachineExist}`);
+                return -1;
+            }
+        }
+        else
+        {
+            return -11;
+        }
+    }
+    catch (Exception)
+    {
+        return -10;
+    }
+}
+
+
 async function AddNewPSOToProject(req,res,psoDB, isStableKey)
 {
     try
@@ -203,58 +303,26 @@ async function AddNewPSOToProject(req,res,psoDB, isStableKey)
         //psoDB.Create
         //await psoDB.AddProject(1, "TestProject", Buffer.from("59BAF778B714E5CAF6A7F3A3DE036749122829BDC30639F155130BDB21D74166", 'hex'));
 
-        // Take Data, hash it, and insert
-        // TODO: Try to parse it
-        // HCACEPIP
+        let result:number = await AddNewPSOToProjectByUUIDs(psoDB, project, machine, version, req.body, isStableKey);
 
-        // Assert
-        let short = req.body.subarray(0,8);
-
-        if (short.equals(Buffer.from("HCACEPIP")))
+        // Results
+        if(0 == result)
         {
-            let hash = await HashOfBuffer(req.body);
-
-            let datenow = new Date();
-
-            // Check Machine Exists
-            let DoesMachineExist = await psoDB.GetMachinesByFingerprint(machine);
-            let vInts = StringToVersion(version);
-            
-
-            let result = 1;
-            if (DoesMachineExist)
-            {
-                result = await psoDB.AddPSO(project, hash, req.body, datenow, machine, version, isStableKey); 
-                console.log(`Result: ${result}`);
-            }
-            else
-            {
-                console.log(`Machine: ${DoesMachineExist}`);
-            }
-
-            // Results
-            if(0 == result)
-            {
-                res.sendStatus(200);
-                return;
-            }
-            else if (-1 == result)
-            {
-                res.status(400).send("{ \"code\": -1, \"reason\": \"Bad Project\" }");
-                return;
-            }
-            else if (-2 == result)
-            {
-                res.status(403).send("{ \"code\": -2, \"reason\": \"Permission Error\" }");
-                return;
-            }
-
-            res.sendStatus(400);//.send(JSON.stringify(results));
+            res.sendStatus(200);
+            return;
         }
-        else
+        else if (-1 == result)
         {
-            res.sendStatus(400);
+            res.status(400).send("{ \"code\": -1, \"reason\": \"Bad Machine or Project\" }");
+            return;
         }
+        else if (-2 == result)
+        {
+            res.status(403).send("{ \"code\": -2, \"reason\": \"Permission Error\" }");
+            return;
+        }
+
+        res.sendStatus(400);//.send(JSON.stringify(results));
     }
     catch (Exception)
     {
@@ -281,4 +349,4 @@ async function getAllPCOs(req, res, db)
 }
 
 
-export {AddNewPSOToProject, ListMachinesByOrg, ListMachinesByProject, getMachinesForOwner, getUserInfo, getAllPCOsForUser, getAllPCOs};
+export {AddNewShaderInfoToProjectByUUIDs, AddNewPSOToProjectByUUIDs, AddNewPSOToProject, ListMachinesByOrg, ListMachinesByProject, getMachinesForOwner, getUserInfo, getAllPCOsForUser, getAllPCOs};

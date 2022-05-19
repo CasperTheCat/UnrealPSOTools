@@ -9,6 +9,8 @@ async function InitDB(db: PipelineShaderObjectDB, shouldDestroy: boolean = false
         {
             await db.ClearDB();
         }
+        console.log("[DBUG] Initialising Session")
+        await db.InitialiseSession();
         console.log("[DBUG] Initialising Auth")
         await db.InitialiseAuth();
         console.log("[DBUG] Initialising Users")
