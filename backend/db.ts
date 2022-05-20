@@ -35,9 +35,11 @@ class PipelineShaderObjectDB
     PSGetAuthByToken = new PreparedStatement(
         {
             name: "PSGetAuthByToken",
-            text: "SELECT users.* FROM users, auth WHERE users.userid = auth.userid AND $1 = ANY(auth.tokens)"
+            text: "SELECT auth_tokens.userid FROM auth_tokens WHERE $1 = auth_tokens.token"
         }
     );
+
+
 
     PSGetProjectIDByUUID = new PreparedStatement(
         {
@@ -73,6 +75,18 @@ class PipelineShaderObjectDB
         {
             name: "PSGetUserByUID",
             text: "SELECT * FROM users WHERE userid = $1"
+        }
+    );
+
+    PSGetOrgsByUser = new PreparedStatement(
+        {
+            name: "PSGetOrgsByUser",
+            text: "SELECT organisations.uuid, organisations.displayname \
+            FROM \
+                organisations, organisation_user_perms \
+            WHERE \
+                organisations.orgid = organisation_user_perms.orgid AND \
+                organisation_user_perms.userid = $1"
         }
     );
 
@@ -398,6 +412,37 @@ class PipelineShaderObjectDB
         }
     );
 
+    PSGetMachineFromOrgByUUIDs = new PreparedStatement(
+        {
+            name: "PSGetMachineFromOrgByUUIDs",
+            text: "SELECT \
+                machines.machineid \
+            FROM \
+                machines, organisations \
+            WHERE \
+                machines.fingerprint = $1 AND \
+                organisations.uuid = $2 AND \
+                organisations.orgid = machines.orgid \
+            "
+        }
+    );
+
+    PSDeleteMachineFromOrgByUUIDs_ValidatedByUserID = new PreparedStatement(
+        {
+            name: "PSDeleteMachineFromOrgByUUIDs_ValidatedByUserID",
+            text: "DELETE FROM machines \
+            USING organisations, organisation_user_perms \
+            WHERE \
+                machines.fingerprint = $1 AND \
+                organisations.uuid = $2 AND \
+                organisations.orgid = machines.orgid AND \
+                organisation_user_perms.userid = $3 AND \
+                organisation_user_perms.orgid = machines.orgid AND \
+                organisation_user_perms.permdeletemachines = true \
+            "
+        }
+    );
+
     PSGetMachinesByOrgUUID_ValidatedByUserID = new PreparedStatement(
         {
             name: "PSGetMachinesByOrgUUID_ValidatedByUserID",
@@ -411,6 +456,23 @@ class PipelineShaderObjectDB
                 organisations.uuid = $1 AND \
                 organisation_user_perms.userid = $2 AND \
                 organisation_user_perms.permadminmachines = true \
+            "
+        }
+    );
+
+    PSGetProjectsByOrgUUID_ValidatedByUserID = new PreparedStatement(
+        {
+            name: "PSGetProjectsByOrgUUID_ValidatedByUserID",
+            text: "SELECT \
+                projects.projectid, projects.displayname, projects.uuid \
+            FROM \
+                projects, organisations, organisation_user_perms \
+            WHERE \
+                projects.orgid = organisation_user_perms.orgid AND \
+                organisation_user_perms.orgid = organisations.orgid AND \
+                organisations.uuid = $1 AND \
+                organisation_user_perms.userid = $2 AND \
+                organisation_user_perms.permadminprojects = true \
             "
         }
     );
@@ -442,7 +504,7 @@ class PipelineShaderObjectDB
     PSGetPipelineDataByToken = new PreparedStatement(
         {
             name: "PSGetPipelineDataByToken",
-            text: "SELECT pipelinecachedata.pipelinecachedata, pipelinecaches.* FROM pipelinecachedata, pipelinecaches, machines, user_machine, auth, users \
+            text: "SELECT pipelinecachedata.pipelinecachedata, pipelinecaches.* FROM pipelinecachedata, pipelinecaches, auth_tokens, machines, user_machine, auth, users \
             WHERE \
               pipelinecachedata.hash = pipelinecaches.hash AND \
               pipelinecaches.pipelinecacheid = ANY(machines.pipelinecacheids) AND \
@@ -450,7 +512,8 @@ class PipelineShaderObjectDB
               auth.userid = user_machine.ownerid AND \
               users.permissionlevelread = true AND \
               auth.userid = users.userid AND \
-              $1 = ANY(auth.tokens)"
+              auth_tokens.userid = auth.userid AND \
+              auth_tokens.token = $1"
         }
     );
 
@@ -872,8 +935,14 @@ class PipelineShaderObjectDB
                 userid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
                 username TEXT UNIQUE, \
                 password BYTEA, \
-                salt BYTEA, \
-                tokens BYTEA ARRAY DEFAULT '{}' NOT NULL \
+                salt BYTEA \
+            ); \
+        ");
+
+        await this.pgdb.query("CREATE TABLE IF NOT EXISTS auth_tokens \
+            ( \
+                userid INT REFERENCES auth (userid) ON DELETE CASCADE, \
+                token BYTEA UNIQUE \
             ); \
         ");
 
@@ -1169,6 +1238,11 @@ class PipelineShaderObjectDB
         return this.pgdb.oneOrNone(this.PSGetUserByUID, [uid]);
     }
 
+    async GetOrgsByUser(uid: number)
+    {
+        return this.pgdb.manyOrNone(this.PSGetOrgsByUser, [uid]);
+    }
+
     async GetPermissionsByOrgAndUserIDs(orgid: number, uid: number)
     {
         return this.pgdb.oneOrNone(this.PSGetPermissionsByOrgAndUserIDs, [orgid, uid]);
@@ -1189,6 +1263,12 @@ class PipelineShaderObjectDB
         return this.pgdb.manyOrNone(this.PSGetMachinesByOrgUUID_ValidatedByUserID, [orguuid, uid]);
     }
 
+    async GetProjectsByOrgUUID_ValidatedByUserID(orguuid: Buffer, uid: number)
+    {
+        return this.pgdb.manyOrNone(this.PSGetProjectsByOrgUUID_ValidatedByUserID, [orguuid, uid]);
+    }
+
+
     async GetMachinesByProjectUUID_ValidatedByUserID(projectuuid: Buffer, uid: number)
     {
         return this.pgdb.manyOrNone(this.PSGetMachinesByProjectUUID_ValidatedByUserID, [projectuuid, uid]);
@@ -1197,6 +1277,16 @@ class PipelineShaderObjectDB
     async GetMachinesByFingerprint(print: Buffer)
     {
         return this.pgdb.oneOrNone(this.PSGetMachinesByPrint, [print]);
+    }
+
+    async GetMachineFromOrgByUUIDs(print: Buffer, org: Buffer)
+    {
+        return this.pgdb.oneOrNone(this.PSGetMachineFromOrgByUUIDs, [print, org]);
+    }
+
+    async DeleteMachineFromOrgByUUIDs_ValidatedByUserID(print: Buffer, org: Buffer, userid: number)
+    {
+        return this.pgdb.oneOrNone(this.PSDeleteMachineFromOrgByUUIDs_ValidatedByUserID, [print, org, userid]);
     }
 
     // async GetPipelineCacheByHash(hash: Buffer)
@@ -1614,6 +1704,43 @@ class PipelineShaderObjectDB
         }
     }
 
+    async AddMachineToProject(userid:number, machineprint: Buffer, owningOrg: Buffer, projectuuid: Buffer, validFrom: Date, validTill: Date, canSubmit: boolean, canPull: boolean)
+    {
+        try
+        {
+            let CheckPerm = await this.GetPermissionsByOrgUUIDAndUserID(owningOrg, userid);
+            let ProjectPerm = await this.GetPermissionsByProjectUUIDAndUserID(projectuuid, userid, new Date());
+
+            if((CheckPerm && CheckPerm.permEditProject) || (ProjectPerm))
+            {
+                // Project
+                let projectIdent = await this.GetProjectIDByUUID(projectuuid);
+                let machineIdent = await this.GetMachineFromOrgByUUIDs(machineprint, owningOrg);
+
+                if(machineIdent && projectIdent)
+                {
+                    // We have the permission to do 
+                    let res = await this.pgdb.one("INSERT INTO project_machine_perms (projectid, machineid, validfrom, validuntil) VALUES ($1, $2, $3, $4) RETURNING machineid;", [
+                        projectIdent,
+                        machineIdent,
+
+                    ]
+                    );
+                }
+                return -1;
+            }
+            else
+            {
+                return -2;
+            }
+        }
+        catch (Exception)
+        {
+            console.log(Exception);
+            return -10;
+        }
+    }
+
     async AddMachine(userid:number, machinename: string, owningOrg: Buffer)
     {
         try
@@ -1752,13 +1879,50 @@ class PipelineShaderObjectDB
                 throw new Error("UUID Unique was not satisfied!");
             }
 
-            let res = await this.pgdb.one("INSERT INTO auth (username, password, salt, tokens) VALUES ($1, $2, $3, ARRAY[$4::bytea]) RETURNING userid;", [
+            let res = await this.pgdb.one("INSERT INTO auth (username, password, salt) VALUES ($1, $2, $3) RETURNING userid;", [
                 username, 
                 key,
                 salt,
-                crypto.randomBytes(32)
             ]
             );
+
+
+            
+
+
+            if(res)
+            {
+                for(uuidIndex = 0; uuidIndex < 10; ++uuidIndex)
+                {
+                    uuid = crypto.randomBytes(32);
+                    let uuidCheck = await this.pgdb.oneOrNone("SELECT auth_tokens.userid FROM auth_tokens WHERE auth_tokens.token = $1", [uuid]);
+                    if(uuidCheck)
+                    {
+                        // Okay. Might as well warn about this
+                        console.log(`[INFO] UUID Collision. Generating a new UUID for ${username}`);
+                        uuid = crypto.randomBytes(32);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+    
+                if(uuidIndex == 10)
+                {
+                    throw new Error("UUID Unique was not satisfied!");
+                }
+
+                let res2 = await this.pgdb.one("INSERT INTO auth_tokens (userid, token) VALUES ($1, $2) RETURNING userid;", [
+                    res.userid, 
+                    uuid
+                ]
+                );
+            }
+
+
+
+            //auth_tokens
 
             // await this.pgdb.none("UPDATE auth SET tokens = ARRAY_APPEND(tokens, $2) WHERE auth.userid = $1", [
             //     res["userid"],

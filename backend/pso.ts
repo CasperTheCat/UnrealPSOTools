@@ -1,9 +1,9 @@
 import express from "express";
 import { fileURLToPath } from 'url';
 import path,{ dirname } from 'path';
-import {AddNewShaderInfoToProjectByUUIDs, AddNewPSOToProjectByUUIDs, AddNewPSOToProject, ListMachinesByOrg, ListMachinesByProject, getMachinesForOwner, getUserInfo, getAllPCOsForUser, getAllPCOs} from "./apidecl.js";
+import {AddNewShaderInfoToProjectByUUIDs, AddNewPSOToProjectByUUIDs, AddNewPSOToProject, ListMachinesByOrg, ListMachinesByProject, getMachinesForOrg, getUserInfo, getAllPCOsForUser, getAllPCOs} from "./apidecl.js";
 import { PipelineShaderObjectDB } from './db.js';
-import { ShaderKeyTypes, HashOfBuffer, StringToVersion } from './helpers.js';
+import { ShaderKeyTypes, HandleReturn, HashOfBuffer, StringToVersion, GetUserID} from './helpers.js';
 import passport from "passport";
 import {ensureLoggedIn} from 'connect-ensure-login';
 import {InsertNewUserToDB} from "./auth.js";
@@ -38,15 +38,15 @@ async function entry()
         throw Exception;
     }
 
-    const pgo: connectPgSimple.PGStoreOptions = {
+    const StoreOptions: connectPgSimple.PGStoreOptions = {
         pgPromise: psoDB.pgdb,
         tableName: 'session'
       };
 
-    const o = connectPgSimple(session);
+    const connector = connectPgSimple(session);
 
     app.use(session({
-        store: new o(pgo),
+        store: new connector(StoreOptions),
           secret: ['test'],
           cookie: {
             secure: false,
@@ -130,7 +130,38 @@ async function entry()
         getUserInfo(req, res, psoDB);
     });
 
+    app.post('/api/orgs', bodyParser.json({ limit: '99mb', strict: true }), async (req, res) => 
+    {
+        try
+        {
+            let userid = await GetUserID(req, req.body, psoDB);
 
+            if(userid > 0)
+            {
+                console.log("[INFO] Requesting User Data for user " + userid.toString());
+                let userData = await psoDB.GetOrgsByUser(userid);
+    
+                for(let pco of userData)
+                {
+                    pco.uuid = pco.uuid.toString('base64');
+                }
+
+                userData = JSON.stringify(userData);
+    
+                res.status(200).send(`{ "orgs": ${userData} }`);
+            }
+            else
+            {
+                res.sendStatus(403);
+            }
+    
+        }
+        catch (Except)
+        {
+            console.log(Except);
+            res.sendStatus(500);
+        }
+    });
 
     app.get("/api/machine/list/byorg/:org", ensureLoggedIn(), async (req, res) => 
     {
@@ -156,8 +187,8 @@ async function entry()
             //console.log(jsonbody);
             if ("project" in jsonbody && "machine" in jsonbody && "version" in jsonbody)
             {
-                let ProjectUUID: Buffer = Buffer.from(jsonbody["project"], 'hex');
-                let MachineUUID: Buffer = Buffer.from(jsonbody["machine"], 'hex');
+                let ProjectUUID: Buffer = Buffer.from(jsonbody["project"], 'base64');
+                let MachineUUID: Buffer = Buffer.from(jsonbody["machine"], 'base64');
                 let Version: string = jsonbody["version"];
                 let platform: string = "";
                 let shaderModel: string = "";
@@ -218,11 +249,12 @@ async function entry()
         try
         {
             let jsonbody: JSON = req.body;
+            //let userid: number = await GetUserID(req, jsonbody, psoDB);
             //console.log(jsonbody);
             if ("project" in jsonbody && "machine" in jsonbody && "date" in jsonbody)
             {
-                let ProjectUUID: Buffer = Buffer.from(jsonbody["project"], 'hex');
-                let MachineUUID: Buffer = Buffer.from(jsonbody["machine"], 'hex');
+                let ProjectUUID: Buffer = Buffer.from(jsonbody["project"], 'base64');
+                let MachineUUID: Buffer = Buffer.from(jsonbody["machine"], 'base64');
                 let AfterDate: Date = new Date(jsonbody["date"]);
                 let platform: string = "";
                 let shaderModel: string = "";
@@ -274,17 +306,190 @@ async function entry()
         }
     });
 
+    app.post('/api/projects', bodyParser.json({ limit: '99mb', strict: true }),// ensureLoggedIn(), 
+        async (req, res) => 
+        {
+            // Okay, we have no idea what type of shader we're been passed
+            // Split JSON
+            
+            let jsonbody: JSON = req.body;
+            let userid: number = await GetUserID(req, jsonbody, psoDB);
 
-    // app.get('/api/user', ensureLoggedIn(), async (req, res) => 
-    // {
-    //     getUserInfo(req, res, psoDB);
-    // });
+            if(userid)
+            {
+                let projList;
 
-    // app.get('/api/machine', ensureLoggedIn(),  (req, res) => 
-    //     {
-    //         getMachinesForOwner(req, res, psoDB);
-    //     } 
-    // );
+                if ("org" in jsonbody)
+                {
+                    let organisation: Buffer = Buffer.from(req.body.org, "base64");
+                    projList = await psoDB.GetProjectsByOrgUUID_ValidatedByUserID(organisation, userid);
+                }
+
+                if (projList)
+                {
+                    for(let project of projList)
+                    {
+                        project.uuid = project.uuid.toString('base64');
+                    }
+
+                    projList = JSON.stringify(projList);
+
+                    res.status(200).send(`{ "projects": ${projList} }`);
+                    return;
+                }
+            }
+
+            res.sendStatus(400);
+        }
+    );
+
+    app.post('/api/machines', bodyParser.json({ limit: '99mb', strict: true }),// ensureLoggedIn(), 
+        async (req, res) => 
+        {
+            // Okay, we have no idea what type of shader we're been passed
+            // Split JSON
+            
+            let jsonbody: JSON = req.body;
+            let userid: number = await GetUserID(req, jsonbody, psoDB);
+
+            if(userid)
+            {
+                let macList;
+
+                if ("org" in jsonbody)
+                {
+                    let organisation: Buffer = Buffer.from(req.body.org, "base64");
+                    macList = await psoDB.GetMachinesByOrgUUID_ValidatedByUserID(organisation, userid);
+                }
+                else if ("project" in jsonbody)
+                {
+                    let project: Buffer = Buffer.from(req.body.project, "base64");
+                    macList = await psoDB.GetMachinesByProjectUUID_ValidatedByUserID(project, userid);
+                }
+
+                if (macList)
+                {
+                    for(let machine of macList)
+                    {
+                        machine.fingerprint = machine.fingerprint.toString('base64');
+                    }
+
+                    macList = JSON.stringify(macList);
+
+                    res.status(200).send(`{ "machines": ${macList} }`);
+                    return;
+                }
+            }
+
+            res.sendStatus(400);
+        }
+    );
+
+    app.put('/api/machines', bodyParser.json({ limit: '99mb', strict: true }),// ensureLoggedIn(), 
+        async (req, res) => 
+        {
+            // 
+            let jsonbody: JSON = req.body;
+            let userid: number = await GetUserID(req, jsonbody, psoDB);
+
+            if(userid && "org" in jsonbody)
+            {
+                let result: number = -1;
+                let organisation: Buffer = Buffer.from(req.body.org, "base64");
+
+                if ("machinename" in jsonbody)
+                {
+                    result = await psoDB.AddMachine(userid, req.body.machinename, organisation);
+                }
+                else if ("project" in jsonbody && "machineuuid" in jsonbody && "validfrom" in jsonbody && "validuntil" in jsonbody && "canSubmit" in jsonbody && "canPull" in jsonbody)
+                {
+                    let project: Buffer = Buffer.from(req.body.project, "base64");
+                    let machine: Buffer = Buffer.from(req.body.machineuuid, "base64");
+                    result = await psoDB.AddMachineToProject(userid, machine, organisation, project, new Date(jsonbody["validfrom"]), new Date(jsonbody["validuntil"]), jsonbody["canSubmit"], jsonbody["canPull"]);
+                    //userid:number, machineprint: Buffer, owningOrg: Buffer, projectuuid: Buffer, validFrom: Date, validTill: Date, canSubmit: boolean, canPull: boolean
+                }
+
+                HandleReturn(result, res);
+                return;
+            }
+
+            res.sendStatus(400);
+        }
+    );
+
+    app.delete('/api/machines', bodyParser.json({ limit: '99mb', strict: true }),// ensureLoggedIn(), 
+        async (req, res) => 
+        {
+            // 
+            let jsonbody: JSON = req.body;
+            let userid: number = await GetUserID(req, jsonbody, psoDB);
+
+            if(userid > 0 && "machineuuid" in jsonbody)
+            {
+                let result: number = -1;
+                let machineID: Buffer = Buffer.from(req.body.machineuuid, "base64");
+
+                if ("org" in jsonbody)
+                {
+                    let organisation: Buffer = Buffer.from(req.body.org, "base64");
+                    await psoDB.DeleteMachineFromOrgByUUIDs_ValidatedByUserID(machineID, organisation, userid);
+                    result = 0;
+                }
+                else if ("project" in jsonbody)
+                {
+                    let project: Buffer = Buffer.from(req.body.project, "base64");
+                    //result = await psoDB.AddMachineToProject(userid, machine, organisation, project, new Date(jsonbody["validfrom"]), new Date(jsonbody["validuntil"]), jsonbody["canSubmit"], jsonbody["canPull"]);
+                    //userid:number, machineprint: Buffer, owningOrg: Buffer, projectuuid: Buffer, validFrom: Date, validTill: Date, canSubmit: boolean, canPull: boolean
+                }
+
+                HandleReturn(result, res);
+                return;
+            }
+
+            res.sendStatus(400);
+        }
+    );
+
+    app.post('/api/permissions', bodyParser.json({ limit: '99mb', strict: true }),// ensureLoggedIn(), 
+        async (req, res) => 
+        {
+            // Okay, we have no idea what type of shader we're been passed
+            // Split JSON
+            let jsonbody: JSON = req.body;
+            let userid: number = await GetUserID(req, jsonbody, psoDB);
+            //console.log(jsonbody);
+            if (userid > 0)
+            {
+                let macList;
+
+                if ("machine" in jsonbody)
+                {
+                    let organisation: Buffer = Buffer.from(req.body.org, "base64");
+                    //macList = await psoDB.Get(organisation, userid);
+                }
+                else if ("project" in jsonbody)
+                {
+                    let project: Buffer = Buffer.from(req.body.project, "base64");
+                    macList = await psoDB.GetMachinesByProjectUUID_ValidatedByUserID(project, userid);
+                }
+
+                if (macList)
+                {
+                    for(let machine of macList)
+                    {
+                        machine.fingerprint = machine.fingerprint.toString('base64');
+                    }
+
+                    macList = JSON.stringify(macList);
+
+                    res.status(200).send(`{ "machines": ${macList} }`);
+                    return;
+                }
+            }
+
+            res.sendStatus(400);
+        }
+    );
 
     app.post('/api/pco/new/', bodyParser.json({ limit: '99mb', strict: true }),// ensureLoggedIn(), 
         async (req, res) => 
@@ -298,8 +503,8 @@ async function entry()
                 if (ShaderKeyTypes.indexOf(jsonbody["shadertype"].toLowerCase()) >= 0)
                 {
                     // We have everything we *need*
-                    let projectuuid: Buffer = Buffer.from(jsonbody["project"], 'hex');
-                    let machineuuid: Buffer = Buffer.from(jsonbody["machine"], 'hex');
+                    let projectuuid: Buffer = Buffer.from(jsonbody["project"], 'base64');
+                    let machineuuid: Buffer = Buffer.from(jsonbody["machine"], 'base64');
                     let version: string = jsonbody["version"];
                     let data: Buffer = Buffer.from(jsonbody["data"], 'base64');
                     let platform: string = "";
@@ -334,25 +539,8 @@ async function entry()
                             break;
                     }
 
-                    switch(result)
-                    {
-                        case 0:
-                            res.sendStatus(200);
-                            break;
-                        case -1:
-                            res.status(400).send("{ \"code\": -1, \"reason\": \"Bad Machine or Project\" }");
-                            break;
-                        case -2:
-                            res.status(403).send("{ \"code\": -2, \"reason\": \"Permission Error\" }");
-                            break;
-                        case -11:
-                            res.status(400).send("{ \"code\": -11, \"reason\": \"Bad Data\" }");
-                            break;
-                        default:
-                            res.status(500).send("{ \"code\": 0, \"reason\": \"Server Error\" }");
-                            break;
-                    }
-                    
+                    HandleReturn(result, res);      
+                    return;              
                 }
                 else
                 {

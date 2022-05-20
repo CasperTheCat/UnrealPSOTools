@@ -1,8 +1,10 @@
 <script lang='ts'>
 	export let name = "Default Name";
-    export let tag: String = undefined;
+    export let uuid: String = undefined;
     export let imgPath = "";
+    export let type = "";
     export let alt = "";
+    export let editState = 0;
 
     import { createEventDispatcher } from 'svelte';
 
@@ -22,7 +24,9 @@
         }
 
         dispatch('summon', {
-            "tag": tag,
+            "uuid": uuid,
+            "name": name,
+            "type": editState,
             "x": modx,//.pageX,
             "y": mody//pageY
         });
@@ -31,12 +35,20 @@
 </script>
 
 <div class="cardblank" on:click={HandleCardClick}>
-    <div class="cardimage">
-        {#if imgPath !== ""}
-        <img src={imgPath}/ alt={alt}>
-        {/if}
-    </div>
-    <div class="card">{name}</div>
+    {#if type !== ""}
+        <div class="cardimage">
+            <h2>{name}</h2>
+        </div>
+        <div class="card">{type}</div>
+    {:else}
+        <div class="cardimage">
+            {#if imgPath !== ""}
+                <img src={imgPath}/ alt={alt}>
+            {/if}
+        </div>
+        <div class="card">{name}</div>
+    {/if}
+    
 </div>
 
 <style>
@@ -45,6 +57,11 @@
 		height: 128px;
 		background-color: #1c1c1c;
 	}
+
+    h2
+    {
+        padding-top:40px;
+    }
 
 	.cardimage {
 		height: 96px;

@@ -11,17 +11,26 @@ import { HashOfBuffer, StringToVersion } from './helpers.js';
 // Let's just load the board names
 // We can look for the boards later!
 
-async function getMachinesForOwner(req, res, db: PipelineShaderObjectDB)
+async function getMachinesForOrg(req, res, db: PipelineShaderObjectDB)
 {
-    console.log("[INFO] Request machine data for user " + req.user.toString());
     try
     {
-        let boardList = await db.GetMachinesByUID(req.user);
-        console.log(boardList);
+        if("user" in req)
+        {
+            let organisation: Buffer = Buffer.from(req.body.org, "hex");
 
-        boardList = JSON.stringify(boardList);
+            console.log("[INFO] Request machine data for user " + req.user.toString());
+            let boardList = await db.GetMachinesByOrgUUID_ValidatedByUserID(organisation ,req.user);
+            console.log(boardList);
 
-        res.status(200).send(`{ "machines": ${boardList} }`);
+            boardList = JSON.stringify(boardList);
+
+            res.status(200).send(`{ "machines": ${boardList} }`);
+        }
+        else
+        {
+            res.sendStatus(400);
+        }
     }
     catch (Except)
     {
@@ -349,4 +358,4 @@ async function getAllPCOs(req, res, db)
 }
 
 
-export {AddNewShaderInfoToProjectByUUIDs, AddNewPSOToProjectByUUIDs, AddNewPSOToProject, ListMachinesByOrg, ListMachinesByProject, getMachinesForOwner, getUserInfo, getAllPCOsForUser, getAllPCOs};
+export {AddNewShaderInfoToProjectByUUIDs, AddNewPSOToProjectByUUIDs, AddNewPSOToProject, ListMachinesByOrg, ListMachinesByProject, getMachinesForOrg, getUserInfo, getAllPCOsForUser, getAllPCOs};

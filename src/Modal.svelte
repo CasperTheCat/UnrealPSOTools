@@ -65,9 +65,10 @@
 	.modal {
 		position: absolute;
 		left: 50%;
+		filter: drop-shadow(0 5px 5px black);
 		top: 50%;
 		width: calc(100vw - 4em);
-		max-width: 32em;
+		max-width: 48em;
 		max-height: calc(100vh - 4em);
 		overflow: auto;
 		transform: translate(-50%,-50%);
@@ -79,8 +80,10 @@
     .centre
     {
         justify-content: center;
+		text-align: center;
         font-size: 1.35em;
-		color: #ff3e00;
+		/* color: #ff3e00; */
+		color: #dedede;
 		font-weight: 100;
 		font-family: 'Roboto', 'Flow Circular',  sans-serif;
 		font-display: swap;

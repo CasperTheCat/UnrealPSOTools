@@ -1,5 +1,6 @@
 
 import crypto from "crypto";
+import type { PipelineShaderObjectDB } from "./db";
 
 function HashOfBuffer(data: Buffer): Promise<Buffer>
 {
@@ -48,5 +49,44 @@ let ShaderKeyTypes = [
     "globalshaderinfo"
 ];
 
-export {ShaderKeyTypes, HashOfBuffer, StringToVersion}
+async function GetUserID(req, jsonbody: JSON, psoDB: PipelineShaderObjectDB)
+{
+    let userid: number = 0;
+    //console.log(jsonbody);
+    if ("passport" in req.session && "user" in req.session["passport"])
+    {
+        userid = req.session["passport"]["user"];
+    }
+    else if ("auth" in jsonbody)
+    {
+        let token: Buffer = Buffer.from(req.body.auth, "hex");
+        userid = await psoDB.GetAuthByToken(token);
+    }
+
+    return userid;
+}
+
+async function HandleReturn(result, res)
+{
+    switch(result)
+    {
+        case 0:
+            res.sendStatus(200);
+            break;
+        case -1:
+            res.status(400).send("{ \"code\": -1, \"reason\": \"Bad Machine or Project\" }");
+            break;
+        case -2:
+            res.status(403).send("{ \"code\": -2, \"reason\": \"Permission Error\" }");
+            break;
+        case -11:
+            res.status(400).send("{ \"code\": -11, \"reason\": \"Bad Data\" }");
+            break;
+        default:
+            res.status(500).send("{ \"code\": 0, \"reason\": \"Server Error\" }");
+            break;
+    }
+}
+
+export {HandleReturn, ShaderKeyTypes, HashOfBuffer, StringToVersion, GetUserID}
 
