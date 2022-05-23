@@ -24,7 +24,8 @@ const { PreparedStatement } = pkg;
 
 const config = {
     connectionString: process.env.DATABASE_URL,
-    max: 30
+    max: 30,
+    ssl: {rejectUnauthorized: false}
 };
 
 class PipelineShaderObjectDB 
