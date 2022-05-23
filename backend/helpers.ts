@@ -49,6 +49,20 @@ let ShaderKeyTypes = [
     "globalshaderinfo"
 ];
 
+// async function GetUserIDMW(req, res, next, psoDB) {
+//     // This enables us to set a variable on req
+//     let userid: number = 0;
+//     if ("passport" in req.session && "user" in req.session["passport"])
+//     {
+//         userid = req.session["passport"]["user"];
+//     }
+//     else if ("authorization" in req.headers)
+//     {
+//         let token: Buffer = Buffer.from(req.headers["authorization"], "base64");
+//         userid = await psoDB.GetAuthByToken(token);
+//     }
+// }
+
 async function GetUserID(req, jsonbody: JSON, psoDB: PipelineShaderObjectDB)
 {
     let userid: number = 0;
@@ -57,9 +71,15 @@ async function GetUserID(req, jsonbody: JSON, psoDB: PipelineShaderObjectDB)
     {
         userid = req.session["passport"]["user"];
     }
+    else if ("authorization" in req.headers)
+    {
+        console.log(req.headers["authorization"]);
+        let token: Buffer = Buffer.from(req.headers["authorization"], "base64");
+        userid = await psoDB.GetAuthByToken(token);
+    }
     else if ("auth" in jsonbody)
     {
-        let token: Buffer = Buffer.from(req.body.auth, "hex");
+        let token: Buffer = Buffer.from(req.body.auth, "base64");
         userid = await psoDB.GetAuthByToken(token);
     }
 

@@ -17,11 +17,29 @@
         let modx = rect.x + (rect.width/2);// + window.pageXOffset;
         let mody = rect.y + (rect.height/2);// + window.pageYOffset;
 
+        //
+        let offsetY = rect.height/2;
+
         if (window !== undefined && window.scrollY !== undefined && window.scrollX !== undefined)
         {
             modx = modx + window.scrollX;
             mody = mody + window.scrollY - (innerHeight / 2);
+
+            offsetY = (window.scrollY - offsetY) - 50;
+
+            //let negation = mody - (rect.height/2);
+            if(offsetY <= 0)
+            {
+                mody = mody - offsetY;
+            }
         }
+
+        // CLAMP
+        // let negation = mody - (rect.height/2);
+        // if(negation <= 0)
+        // {
+        //     mody = mody - negation;
+        // }
 
         dispatch('summon', {
             "uuid": uuid,

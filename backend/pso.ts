@@ -192,6 +192,7 @@ async function entry()
                 let Version: string = jsonbody["version"];
                 let platform: string = "";
                 let shaderModel: string = "";
+                let extag: string = ""
 
                 if ("platform" in jsonbody)
                 {
@@ -201,7 +202,12 @@ async function entry()
                 if ("shadermodel" in jsonbody)
                 {
                     shaderModel = jsonbody["shadermodel"];
-                }                
+                }            
+                
+                if ("tag" in jsonbody)
+                {
+                    extag = jsonbody["tag"];
+                }        
 
                 let vInt = StringToVersion(Version);
 
@@ -209,11 +215,11 @@ async function entry()
                 
                 if (platform.length > 0 && shaderModel.length > 0)
                 {
-                    PCOData = await psoDB.GetCacheDataAfterVersion_ValidatedByMachinePlatformModel(ProjectUUID, MachineUUID, vInt[0], vInt[1], vInt[2], vInt[3], new Date(), platform, shaderModel);
+                    PCOData = await psoDB.GetCacheDataAfterVersion_ValidatedByMachinePlatformModel(ProjectUUID, MachineUUID, vInt[0], vInt[1], vInt[2], vInt[3], new Date(), platform, shaderModel, extag);
                 }
                 else
                 {
-                    PCOData = await psoDB.GetCacheDataAfterVersion_ValidatedByMachine(ProjectUUID, MachineUUID, vInt[0], vInt[1], vInt[2], vInt[3], new Date());
+                    PCOData = await psoDB.GetCacheDataAfterVersion_ValidatedByMachine(ProjectUUID, MachineUUID, vInt[0], vInt[1], vInt[2], vInt[3], new Date(), extag);
                 }
                 
 
@@ -258,6 +264,7 @@ async function entry()
                 let AfterDate: Date = new Date(jsonbody["date"]);
                 let platform: string = "";
                 let shaderModel: string = "";
+                let extag: string = "";
 
                 if ("platform" in jsonbody)
                 {
@@ -269,15 +276,20 @@ async function entry()
                     shaderModel = jsonbody["shadermodel"];
                 }                
 
+                if ("tag" in jsonbody)
+                {
+                    extag = jsonbody["tag"];
+                }     
+
                 let PCOData;
                 
                 if (platform.length > 0 && shaderModel.length > 0)
                 {
-                    PCOData = await psoDB.GetCacheDataAfterDate_ValidatedByMachinePlatformModel(ProjectUUID, AfterDate, MachineUUID, new Date(), platform, shaderModel);
+                    PCOData = await psoDB.GetCacheDataAfterDate_ValidatedByMachinePlatformModel(ProjectUUID, AfterDate, MachineUUID, new Date(), platform, shaderModel, extag);
                 }
                 else
                 {
-                    PCOData = await psoDB.GetCacheDataAfterDate_ValidatedByMachine(ProjectUUID, AfterDate, MachineUUID, new Date());
+                    PCOData = await psoDB.GetCacheDataAfterDate_ValidatedByMachine(ProjectUUID, AfterDate, MachineUUID, new Date(), extag);
                 }
                 
 
@@ -364,7 +376,7 @@ async function entry()
                 else if ("project" in jsonbody)
                 {
                     let project: Buffer = Buffer.from(req.body.project, "base64");
-                    macList = await psoDB.GetMachinesByProjectUUID_ValidatedByUserID(project, userid);
+                    macList = await psoDB.GetMachinesByProjectUUID_ValidatedByUserID(project, userid, new Date());
                 }
 
                 if (macList)
@@ -417,6 +429,38 @@ async function entry()
         }
     );
 
+    app.put('/api/projects', bodyParser.json({ limit: '99mb', strict: true }),// ensureLoggedIn(), 
+        async (req, res) => 
+        {
+            try 
+            {
+                // 
+                let jsonbody: JSON = req.body;
+                let userid: number = await GetUserID(req, jsonbody, psoDB);
+
+                if(userid && "org" in jsonbody)
+                {
+                    let result: number = -1;
+                    let organisation: Buffer = Buffer.from(req.body.org, "base64");
+
+                    if ("projectname" in jsonbody)
+                    {
+                        result = await psoDB.AddProject(userid, jsonbody["projectname"], organisation);
+                    }
+
+                    HandleReturn(result, res);
+                    return;
+                }
+
+                res.sendStatus(400);
+            }
+            catch (Exception)
+            {
+                res.sendStatus(500);
+            }
+        }
+    );
+
     app.delete('/api/machines', bodyParser.json({ limit: '99mb', strict: true }),// ensureLoggedIn(), 
         async (req, res) => 
         {
@@ -431,15 +475,63 @@ async function entry()
 
                 if ("org" in jsonbody)
                 {
-                    let organisation: Buffer = Buffer.from(req.body.org, "base64");
-                    await psoDB.DeleteMachineFromOrgByUUIDs_ValidatedByUserID(machineID, organisation, userid);
-                    result = 0;
+                    let Organisation: Buffer = Buffer.from(req.body.org, "base64");
+
+                    let Perms = await psoDB.GetPermissionsByOrgUUIDAndUserID(Organisation, userid);
+
+                    if (Perms && Perms["permdeletemachines"])
+                    {
+                        await psoDB.DeleteMachineFromOrgByUUIDs_ValidatedByUserID(machineID, Organisation, userid);
+                        result = 0;
+                    }
+                    else
+                    {
+                        // Permissions
+                        result -2;
+                    }
                 }
                 else if ("project" in jsonbody)
                 {
-                    let project: Buffer = Buffer.from(req.body.project, "base64");
+                    let Project: Buffer = Buffer.from(jsonbody["project"], "base64");
                     //result = await psoDB.AddMachineToProject(userid, machine, organisation, project, new Date(jsonbody["validfrom"]), new Date(jsonbody["validuntil"]), jsonbody["canSubmit"], jsonbody["canPull"]);
                     //userid:number, machineprint: Buffer, owningOrg: Buffer, projectuuid: Buffer, validFrom: Date, validTill: Date, canSubmit: boolean, canPull: boolean
+                }
+
+                HandleReturn(result, res);
+                return;
+            }
+
+            res.sendStatus(400);
+        }
+    );
+
+    app.delete('/api/projects', bodyParser.json({ limit: '99mb', strict: true }),// ensureLoggedIn(), 
+        async (req, res) => 
+        {
+            // 
+            let jsonbody: JSON = req.body;
+            let userid: number = await GetUserID(req, jsonbody, psoDB);
+
+            if(userid > 0 && "projectuuid" in jsonbody)
+            {
+                let result: number = -1;
+                let ProjectUUID: Buffer = Buffer.from(jsonbody["projectuuid"], "base64");
+
+                if ("org" in jsonbody)
+                {
+                    let Organisation: Buffer = Buffer.from(jsonbody["org"], "base64");
+                    let Perms = await psoDB.GetPermissionsByOrgUUIDAndUserID(Organisation, userid);
+
+                    if (Perms && Perms["permdeleteproject"])
+                    {
+                        await psoDB.DeleteProjectFromOrgByUUIDs_ValidatedByUserID(ProjectUUID, Organisation, userid);
+                        result = 0;
+                    }
+                    else
+                    {
+                        // Permissions
+                        result -2;
+                    }
                 }
 
                 HandleReturn(result, res);
@@ -460,29 +552,35 @@ async function entry()
             //console.log(jsonbody);
             if (userid > 0)
             {
-                let macList;
+                let Perms;
 
-                if ("machine" in jsonbody)
+                if ("org" in jsonbody)
                 {
-                    let organisation: Buffer = Buffer.from(req.body.org, "base64");
-                    //macList = await psoDB.Get(organisation, userid);
+                    let Organisation: Buffer = Buffer.from(jsonbody["org"], "base64");
+                    Perms = await psoDB.GetPermissionsByOrgUUIDAndUserID(Organisation, userid);
                 }
                 else if ("project" in jsonbody)
                 {
                     let project: Buffer = Buffer.from(req.body.project, "base64");
-                    macList = await psoDB.GetMachinesByProjectUUID_ValidatedByUserID(project, userid);
+                    //psoDB.GetPermissionsByProjectUUIDAndUserID
+                    Perms = await psoDB.GetPermissionsByProjectUUIDAndUserID(project, userid, new Date());
                 }
 
-                if (macList)
+                if (Perms)
                 {
-                    for(let machine of macList)
-                    {
-                        machine.fingerprint = machine.fingerprint.toString('base64');
-                    }
+                    // for(let machine of Perms)
+                    // {
+                    //     machine.fingerprint = machine.fingerprint.toString('base64');
+                    // }
 
-                    macList = JSON.stringify(macList);
+                    Perms = JSON.stringify(Perms);
 
-                    res.status(200).send(`{ "machines": ${macList} }`);
+                    res.status(200).send(Perms);//(`{ "permissions": ${Perms} }`);
+                    return;
+                }
+                else
+                {
+                    res.sendStatus(403);
                     return;
                 }
             }
@@ -496,8 +594,8 @@ async function entry()
         {
             // Okay, we have no idea what type of shader we're been passed
             // Split JSON
+
             let jsonbody: JSON = req.body;
-            //console.log(jsonbody);
             if ("project" in jsonbody && "machine" in jsonbody && "version" in jsonbody && "data" in jsonbody && "shadertype" in jsonbody)
             {
                 if (ShaderKeyTypes.indexOf(jsonbody["shadertype"].toLowerCase()) >= 0)
@@ -561,6 +659,33 @@ async function entry()
         async (req, res) => 
         {
             AddNewPSOToProject(req,res,psoDB, true);
+        }
+    );
+
+    app.post('/api/renewtoken', bodyParser.json({ limit: '99mb', strict: true }),
+        async (req, res) => 
+        {
+            // Okay, we have no idea what type of shader we're been passed
+            
+            let jsonbody: JSON = req.body;
+            let userid: number = await GetUserID(req, jsonbody, psoDB);
+
+            if(userid)
+            {
+                let [result, token] = await psoDB.RenewUserToken(userid);
+
+                if (result == 0)
+                {
+                    let tokenb64: string = token.toString('base64');
+
+                    tokenb64 = JSON.stringify(tokenb64);
+
+                    res.status(200).send(`{ "token": ${tokenb64} }`);
+                    return;
+                }
+            }
+
+            res.sendStatus(400);
         }
     );
 

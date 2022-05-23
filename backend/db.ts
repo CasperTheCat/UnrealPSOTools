@@ -112,7 +112,19 @@ class PipelineShaderObjectDB
     PSGetPermissionsByOrgUUIDAndUserID = new PreparedStatement(
         {
             name: "PSGetPermissionsByOrgUUIDAndUserID",
-            text: "SELECT organisation_user_perms.* \
+            text: "SELECT \
+                organisation_user_perms.permAdminUsers, \
+                organisation_user_perms.permCreateUser, \
+                organisation_user_perms.permDeleteUser, \
+                organisation_user_perms.permEditUser, \
+                organisation_user_perms.permAdminMachines, \
+                organisation_user_perms.permCreateMachines, \
+                organisation_user_perms.permDeleteMachines, \
+                organisation_user_perms.permEditMachines, \
+                organisation_user_perms.permAdminProjects, \
+                organisation_user_perms.permCreateProject, \
+                organisation_user_perms.permDeleteProject, \
+                organisation_user_perms.permEditProject \
             FROM organisations, organisation_user_perms \
             WHERE \
                 organisations.uuid = $1 AND \
@@ -142,25 +154,24 @@ class PipelineShaderObjectDB
             name: "PSGetMachinesByProjectUUID_ValidatedByUserID",
             text: "SELECT \
                 machines.machineid, machines.machinename, machines.fingerprint \
-            FROM \
-                machines, projects, project_user_perms, project_machine_perms, organisation_user_perms \
+            FROM machines \
+                LEFT OUTER JOIN project_machine_perms pmp on machines.machineid = pmp.machineid \
+                LEFT OUTER JOIN projects p on pmp.projectid = p.projectid \
+                LEFT OUTER JOIN organisation_user_perms oup on p.orgid = oup.orgid \
+                LEFT OUTER JOIN project_user_perms pup on p.projectid = pup.projectid \
             WHERE \
-                machines.machineid = project_machine_perms.machineid AND \
-                project_machine_perms.projectid = projects.projectid AND \
-                projects.uuid = $1 AND \
+                p.uuid = $1 AND \
                 (\
                     (\
-                        projects.projectid = project_user_perms.projectid AND \
-                        project_user_perms.userid = $2 AND \
-                        project_user_perms.validfrom < $3 AND \
-                        project_user_perms.validuntil > $3 \
-                    )\
+                        oup.userid = $2 AND \
+                        oup.permadminprojects = true \
+                    ) \
                     OR \
-                    (\
-                        projects.orgid = organisation_user_perms.orgid AND \
-                        organisation_user_perms.userid = $2 AND \
-                        organisation_user_perms.permadminprojects = true\
-                    )\
+                    ( \
+                        pup.userid = $2 AND \
+                        pup.validfrom < $3 AND \
+                        pup.validuntil > $3 \
+                    ) \
                 )\
             "
         }
@@ -183,6 +194,7 @@ class PipelineShaderObjectDB
                 pipelinecaches.projectid = projects.projectid AND \
                 projects.uuid = $1 AND \
                 machines.fingerprint = $3 AND \
+                pipelinecaches.extratag = $5 AND \
                 project_machine_perms.machineid = machines.machineid AND \
                 project_machine_perms.projectid = projects.projectid AND \
                 project_machine_perms.validfrom < $4 AND \
@@ -209,6 +221,7 @@ class PipelineShaderObjectDB
                 pipelinecaches.platform = $5 AND \
                 pipelinecaches.shaderModel = $6 AND \
                 pipelinecaches.projectid = projects.projectid AND \
+                pipelinecaches.extratag = $7 AND \
                 projects.uuid = $1 AND \
                 machines.fingerprint = $3 AND \
                 project_machine_perms.machineid = machines.machineid AND \
@@ -292,6 +305,7 @@ class PipelineShaderObjectDB
                 pipelinecaches.versionMinor >= $4 AND \
                 pipelinecaches.versionRevision >= $5 AND \
                 pipelinecaches.versionBuild >= $6 AND \
+                pipelinecaches.extratag = $8 AND \
                 pipelinecaches.projectid = projects.projectid AND \
                 projects.uuid = $1 AND \
                 machines.fingerprint = $2 AND \
@@ -324,6 +338,7 @@ class PipelineShaderObjectDB
                 pipelinecaches.projectid = projects.projectid AND \
                 pipelinecaches.platform = $8 AND \
                 pipelinecaches.shaderModel = $9 AND \
+                pipelinecaches.extratag = $10 AND \
                 projects.uuid = $1 AND \
                 machines.fingerprint = $2 AND \
                 project_machine_perms.machineid = machines.machineid AND \
@@ -439,6 +454,22 @@ class PipelineShaderObjectDB
                 organisation_user_perms.userid = $3 AND \
                 organisation_user_perms.orgid = machines.orgid AND \
                 organisation_user_perms.permdeletemachines = true \
+            "
+        }
+    );
+
+    PSDeleteProjectFromOrgByUUIDs_ValidatedByUserID = new PreparedStatement(
+        {
+            name: "PSDeleteProjectFromOrgByUUIDs_ValidatedByUserID",
+            text: "DELETE FROM projects \
+            USING organisations, organisation_user_perms \
+            WHERE \
+                projects.uuid = $1 AND \
+                organisations.uuid = $2 AND \
+                organisations.orgid = projects.orgid AND \
+                organisation_user_perms.userid = $3 AND \
+                organisation_user_perms.orgid = projects.orgid AND \
+                organisation_user_perms.permdeleteproject = true \
             "
         }
     );
@@ -631,12 +662,12 @@ class PipelineShaderObjectDB
     //     }
     // );
 
-    // // PSDeleteTag = new PreparedStatement(
-    // //     {
-    // //         name: "PSDeleteTag",
-    // //         text: "UPDATE pipelinecaches SET tags = ts_delete(tags::tsvector, $2::text) WHERE tags @@ $1::tsquery"
-    // //     }
-    // // );
+    // PSRenewToken = new PreparedStatement(
+    //     {
+    //         name: "PSDeleteTag",
+    //         text: "UPDATE pipelinecaches SET tags = ts_delete(tags::tsvector, $2::text) WHERE tags @@ $1::tsquery"
+    //     }
+    // );
 
     // PSDeleteTag = new PreparedStatement(
     //     {
@@ -1135,7 +1166,10 @@ class PipelineShaderObjectDB
                 versionMinor INT NOT NULL, \
                 versionRevision INT NOT NULL, \
                 versionBuild INT NOT NULL, \
-                stable BOOLEAN DEFAULT false \
+                stable BOOLEAN DEFAULT false, \
+                saveMode INT DEFAULT 100, \
+                ordering INT DEFAULT 100, \
+                extratag VARCHAR(24) \
             );"
         );
 
@@ -1269,9 +1303,9 @@ class PipelineShaderObjectDB
     }
 
 
-    async GetMachinesByProjectUUID_ValidatedByUserID(projectuuid: Buffer, uid: number)
+    async GetMachinesByProjectUUID_ValidatedByUserID(projectuuid: Buffer, uid: number, cdata: Date)
     {
-        return this.pgdb.manyOrNone(this.PSGetMachinesByProjectUUID_ValidatedByUserID, [projectuuid, uid]);
+        return this.pgdb.manyOrNone(this.PSGetMachinesByProjectUUID_ValidatedByUserID, [projectuuid, uid, cdata]);
     }
 
     async GetMachinesByFingerprint(print: Buffer)
@@ -1289,6 +1323,12 @@ class PipelineShaderObjectDB
         return this.pgdb.oneOrNone(this.PSDeleteMachineFromOrgByUUIDs_ValidatedByUserID, [print, org, userid]);
     }
 
+    async DeleteProjectFromOrgByUUIDs_ValidatedByUserID(print: Buffer, org: Buffer, userid: number)
+    {
+        return this.pgdb.oneOrNone(this.PSDeleteProjectFromOrgByUUIDs_ValidatedByUserID, [print, org, userid]);
+    }
+
+    
     // async GetPipelineCacheByHash(hash: Buffer)
     // {
     //     return this.pgdb.oneOrNone(this.PSGetPipelineCacheByHash, [hash]);
@@ -1416,9 +1456,9 @@ class PipelineShaderObjectDB
         return this.pgdb.oneOrNone(this.PSGetMachinePermissionsForProjectByUUIDs, [projectuuid, machineuuid, currentDate]);
     }
 
-    async GetCacheDataAfterDate_ValidatedByMachine(projectuuid: Buffer, lookupAfterDate: Date, machineuuid: Buffer, currentDate: Date)
+    async GetCacheDataAfterDate_ValidatedByMachine(projectuuid: Buffer, lookupAfterDate: Date, machineuuid: Buffer, currentDate: Date, extratag: string)
     {
-        return this.pgdb.manyOrNone(this.PSGetCacheDataAfterDate_ValidatedByMachine, [projectuuid, lookupAfterDate, machineuuid, currentDate]);
+        return this.pgdb.manyOrNone(this.PSGetCacheDataAfterDate_ValidatedByMachine, [projectuuid, lookupAfterDate, machineuuid, currentDate, extratag]);
     }
 
     async GetInfoDataAfterDate_ValidatedByMachine(projectuuid: Buffer, lookupAfterDate: Date, machineuuid: Buffer, currentDate: Date)
@@ -1426,9 +1466,9 @@ class PipelineShaderObjectDB
         return this.pgdb.manyOrNone(this.PSGetInfoDataAfterDate_ValidatedByMachine, [projectuuid, lookupAfterDate, machineuuid, currentDate]);
     }
 
-    async GetCacheDataAfterDate_ValidatedByMachinePlatformModel(projectuuid: Buffer, lookupAfterDate: Date, machineuuid: Buffer, currentDate: Date, platform: string, shaderModel: string)
+    async GetCacheDataAfterDate_ValidatedByMachinePlatformModel(projectuuid: Buffer, lookupAfterDate: Date, machineuuid: Buffer, currentDate: Date, platform: string, shaderModel: string, extratag: string)
     {
-        return this.pgdb.manyOrNone(this.PSGetCacheDataAfterDate_ValidatedByMachinePlatformModel, [projectuuid, lookupAfterDate, machineuuid, currentDate, platform, shaderModel]);
+        return this.pgdb.manyOrNone(this.PSGetCacheDataAfterDate_ValidatedByMachinePlatformModel, [projectuuid, lookupAfterDate, machineuuid, currentDate, platform, shaderModel, extratag]);
     }
 
     async GetInfoDataAfterDate_ValidatedByMachinePlatformModel(projectuuid: Buffer, lookupAfterDate: Date, machineuuid: Buffer, currentDate: Date, platform: string, shaderModel: string)
@@ -1441,14 +1481,14 @@ class PipelineShaderObjectDB
         return this.pgdb.manyOrNone(this.PSGetInfoDataAfterVersion_ValidatedByMachine, [projectuuid, machineuuid, versionMajor, versionMinor, versionRevision, versionBuild, currentDate]);
     }
 
-    async GetCacheDataAfterVersion_ValidatedByMachine(projectuuid: Buffer, machineuuid: Buffer, versionMajor: number, versionMinor: number, versionRevision: number, versionBuild: number, currentDate: Date)
+    async GetCacheDataAfterVersion_ValidatedByMachine(projectuuid: Buffer, machineuuid: Buffer, versionMajor: number, versionMinor: number, versionRevision: number, versionBuild: number, currentDate: Date, extratag: string)
     {
-        return this.pgdb.manyOrNone(this.PSGetCacheDataAfterVersion_ValidatedByMachine, [projectuuid, machineuuid, versionMajor, versionMinor, versionRevision, versionBuild, currentDate]);
+        return this.pgdb.manyOrNone(this.PSGetCacheDataAfterVersion_ValidatedByMachine, [projectuuid, machineuuid, versionMajor, versionMinor, versionRevision, versionBuild, currentDate, extratag]);
     }
 
-    async GetCacheDataAfterVersion_ValidatedByMachinePlatformModel(projectuuid: Buffer, machineuuid: Buffer, versionMajor: number, versionMinor: number, versionRevision: number, versionBuild: number, currentDate: Date, platform: string, shaderModel: string)
+    async GetCacheDataAfterVersion_ValidatedByMachinePlatformModel(projectuuid: Buffer, machineuuid: Buffer, versionMajor: number, versionMinor: number, versionRevision: number, versionBuild: number, currentDate: Date, platform: string, shaderModel: string, extratag: string)
     {
-        return this.pgdb.manyOrNone(this.PSGetCacheDataAfterVersion_ValidatedByMachinePlatformModel, [projectuuid, machineuuid, versionMajor, versionMinor, versionRevision, versionBuild, currentDate, platform, shaderModel]);
+        return this.pgdb.manyOrNone(this.PSGetCacheDataAfterVersion_ValidatedByMachinePlatformModel, [projectuuid, machineuuid, versionMajor, versionMinor, versionRevision, versionBuild, currentDate, platform, shaderModel, extratag]);
     }
 
     async GetInfoDataAfterVersion_ValidatedByMachinePlatformModel(projectuuid: Buffer, machineuuid: Buffer, versionMajor: number, versionMinor: number, versionRevision: number, versionBuild: number, currentDate: Date, platform: string, shaderModel: string)
@@ -1631,7 +1671,7 @@ class PipelineShaderObjectDB
         }
     }
 
-    async AddPSO(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isStable: boolean = false, optionalPlatform: string = "", optionalSM: string = "")
+    async AddPSO(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isStable: boolean = false, optionalPlatform: string = "", optionalSM: string = "", optionalTag: string = "")
     {
         try
         {
@@ -1668,7 +1708,7 @@ class PipelineShaderObjectDB
                 let ProjectIdentifier = await this.GetProjectIDByUUID(projectuuid);
                 if(ProjectIdentifier)
                 {
-                    let res = await this.pgdb.one("INSERT INTO pipelinecaches (projectid, dataid, datetime, versionMajor, versionMinor, versionRevision, versionBuild, stable, platform, shaderModel) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING pipelinecacheid;", [
+                    let res = await this.pgdb.one("INSERT INTO pipelinecaches (projectid, dataid, datetime, versionMajor, versionMinor, versionRevision, versionBuild, stable, platform, shaderModel, extratag) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING pipelinecacheid;", [
                         ProjectIdentifier.projectid,
                         PSODataIdentifier,
                         date,
@@ -1678,7 +1718,8 @@ class PipelineShaderObjectDB
                         vInt[3],
                         isStable,
                         optionalPlatform,
-                        optionalSM
+                        optionalSM,
+                        optionalTag
                     ]
                     );
     
@@ -1711,7 +1752,7 @@ class PipelineShaderObjectDB
             let CheckPerm = await this.GetPermissionsByOrgUUIDAndUserID(owningOrg, userid);
             let ProjectPerm = await this.GetPermissionsByProjectUUIDAndUserID(projectuuid, userid, new Date());
 
-            if((CheckPerm && CheckPerm.permEditProject) || (ProjectPerm))
+            if((CheckPerm && CheckPerm.permeditproject) || (ProjectPerm))
             {
                 // Project
                 let projectIdent = await this.GetProjectIDByUUID(projectuuid);
@@ -1720,12 +1761,19 @@ class PipelineShaderObjectDB
                 if(machineIdent && projectIdent)
                 {
                     // We have the permission to do 
-                    let res = await this.pgdb.one("INSERT INTO project_machine_perms (projectid, machineid, validfrom, validuntil) VALUES ($1, $2, $3, $4) RETURNING machineid;", [
-                        projectIdent,
-                        machineIdent,
-
+                    let res = await this.pgdb.one("INSERT INTO project_machine_perms (projectid, machineid, validfrom, validuntil, permsubmitcaches, permpullcaches) VALUES ($1, $2, $3, $4, $5, $6) RETURNING machineid;", [
+                        projectIdent.projectid,
+                        machineIdent.machineid,
+                        validFrom,
+                        validTill,
+                        canSubmit,
+                        canPull
                     ]
                     );
+                    if(res)
+                    {
+                        return 0;
+                    }
                 }
                 return -1;
             }
@@ -1789,6 +1837,74 @@ class PipelineShaderObjectDB
             console.log(Exception);
             return -10;
         }
+    }
+
+    async RenewUserToken (userid: number): Promise<[number, Buffer]>
+    {
+        let result: [number, Buffer] = [-1, null];
+        try
+        {
+            let newToken: Buffer;
+            let uuidIndex = 0;
+            for(uuidIndex = 0; uuidIndex < 10; ++uuidIndex)
+            {
+                newToken = crypto.randomBytes(32);
+                let uuidCheck = await this.pgdb.oneOrNone("SELECT auth_tokens.userid FROM auth_tokens WHERE auth_tokens.token = $1", [newToken]);
+                if(uuidCheck)
+                {
+                    // Okay. Might as well warn about this
+                    console.log(`[INFO] UUID Collision. Generating a new UUID for ${userid}`);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            if(uuidIndex == 10)
+            {
+                throw new Error("UUID Unique was not satisfied!");
+            }
+
+            // Check Token Exists
+            let initCheck = await this.pgdb.oneOrNone("SELECT auth_tokens.userid FROM auth_tokens WHERE auth_tokens.userid = $1", [userid]);
+            if (initCheck)
+            {
+                let res = await this.pgdb.oneOrNone("UPDATE auth_tokens SET token = $1 WHERE userid = $2 RETURNING token", [
+                    newToken,
+                    userid
+                ]
+                );
+    
+                if(res && res["token"])
+                {
+                    result = [0, newToken];
+                }
+            }
+            else
+            {
+                let res = await this.pgdb.oneOrNone("INSERT INTO auth_tokens (userid, token) VALUES ($1, $2) RETURNING token", [
+                    userid, 
+                    newToken
+                ]
+                );
+    
+                if(res && res["token"])
+                {
+                    result = [0, newToken];
+                }
+            }
+
+
+
+            return result;
+        }
+        catch (Exception)
+        {
+            console.log(Exception);
+            return [-10, null];
+        }
+
+        return result;
     }
 
     async AddProject(userid:number, displayname: string, owningOrg: Buffer)
@@ -1900,7 +2016,6 @@ class PipelineShaderObjectDB
                     {
                         // Okay. Might as well warn about this
                         console.log(`[INFO] UUID Collision. Generating a new UUID for ${username}`);
-                        uuid = crypto.randomBytes(32);
                     }
                     else
                     {
