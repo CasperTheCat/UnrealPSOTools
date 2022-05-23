@@ -663,7 +663,7 @@
 		{
 			let fetchable; 
 
-			if(E_PAGETYPE_OrganisationEditProjectEditMachines)
+			if(PageType == E_PAGETYPE_OrganisationEditProjectEditMachines)
 			{
 				fetchable = await fetch(`/api/machines`,
 				{
