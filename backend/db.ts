@@ -14,12 +14,17 @@ import { StringToVersion } from "./helpers.js";
 const { PreparedStatement } = pkg;
 
 // Declare PG
+// const config = {
+//     user: process.env.PGUSER || "psoowner",
+//     password: process.env.PGPASS || "postgres",
+//     host: process.env.PGHOST || "localhost",
+//     port: parseInt( process.env.PGPORT || "5432", 10 ),
+//     database: process.env.PGDATABASE || "pipelinecache"
+// };
+
 const config = {
-    user: process.env.PGUSER || "psoowner",
-    password: process.env.PGPASS || "postgres",
-    host: process.env.PGHOST || "localhost",
-    port: parseInt( process.env.PGPORT || "5432", 10 ),
-    database: process.env.PGDATABASE || "pipelinecache"
+    connectionString: process.env.DATABASE_URL,
+    max: 30
 };
 
 class PipelineShaderObjectDB 
