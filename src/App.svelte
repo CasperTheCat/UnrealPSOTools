@@ -1167,7 +1167,7 @@
 				<div class="menu">
 					{#if (nOrgMachines > 0)}
 						{#each orgMachines as mac}
-							<Card type="Machine" editState={E_MODALSTATE_ShowMachineProject} uuid={mac.fingerprint} name={mac.machinename} on:summon={SpawnCreateModal}/>
+							<Card type="Machine" editState={E_MODALSTATE_ShowMachine} uuid={mac.fingerprint} name={mac.machinename} on:summon={SpawnCreateModal}/>
 						{/each}
 					{/if}
 					<Card type="New" editState={E_MODALSTATE_CreateMachine} uuid=0 name="Add Machine" on:summon={SpawnCreateModal}/>
@@ -1178,7 +1178,7 @@
 				<div class="menu">
 					{#if (orgProjectMachines.length > 0)}
 						{#each orgProjectMachines as mac}
-							<Card type="Machine" editState={E_MODALSTATE_ShowMachine} uuid={mac.fingerprint} name={mac.machinename} on:summon={SpawnCreateModal}/>
+							<Card type="Machine" editState={E_MODALSTATE_ShowMachineProject} uuid={mac.fingerprint} name={mac.machinename} on:summon={SpawnCreateModal}/>
 						{/each}
 					{/if}
 					<Card type="New" editState={E_MODALSTATE_CreateMachine} uuid=0 name="Add Machine" on:summon={SpawnCreateModal}/>
