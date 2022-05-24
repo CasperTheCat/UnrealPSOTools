@@ -193,6 +193,7 @@ async function entry()
                 let platform: string = "";
                 let shaderModel: string = "";
                 let extag: string = ""
+                let usePipeline: boolean = true;
 
                 if ("platform" in jsonbody)
                 {
@@ -209,35 +210,79 @@ async function entry()
                     extag = jsonbody["tag"];
                 }        
 
+                if ("type" in jsonbody)
+                {
+                    if (jsonbody["type"].toLowerCase() == "pipelinecache")
+                    {
+                        usePipeline = true;
+                    }
+                    else if (jsonbody["type"].toLowerCase() == "shk")
+                    {
+                        usePipeline = false;
+                    }
+                    else
+                    {
+                        res.status(400).send("{ \"code\": -1, \"reason\": \"Bad Request. Type is not 'pipelinecache' or 'shk'.\" }");
+                    }
+                }     
+
                 let vInt = StringToVersion(Version);
 
-                let PCOData;
-                
-                if (platform.length > 0 && shaderModel.length > 0)
+                if (usePipeline)
                 {
-                    PCOData = await psoDB.GetCacheDataAfterVersion_ValidatedByMachinePlatformModel(ProjectUUID, MachineUUID, vInt[0], vInt[1], vInt[2], vInt[3], new Date(), platform, shaderModel, extag);
-                }
-                else
-                {
-                    PCOData = await psoDB.GetCacheDataAfterVersion_ValidatedByMachine(ProjectUUID, MachineUUID, vInt[0], vInt[1], vInt[2], vInt[3], new Date(), extag);
-                }
-                
-
-                if(PCOData)
-                {
-                    for(let pco of PCOData)
+                    let PCOData;
+                    
+                    if (platform.length > 0 && shaderModel.length > 0)
                     {
-                        pco.pipelinecachedata = pco.pipelinecachedata.toString('base64');
+                        PCOData = await psoDB.GetCacheDataAfterVersion_ValidatedByMachinePlatformModel(ProjectUUID, MachineUUID, vInt[0], vInt[1], vInt[2], vInt[3], new Date(), platform, shaderModel, extag);
+                    }
+                    else
+                    {
+                        PCOData = await psoDB.GetCacheDataAfterVersion_ValidatedByMachine(ProjectUUID, MachineUUID, vInt[0], vInt[1], vInt[2], vInt[3], new Date(), extag);
                     }
 
-                    let pcos = JSON.stringify(PCOData);
-    
-                    res.status(200).send(pcos);//`{ "userdata": ${userData} }`);
+                    if(PCOData)
+                    {
+                        for(let pco of PCOData)
+                        {
+                            pco.pipelinecachedata = pco.pipelinecachedata.toString('base64');
+                        }
+
+                        let pcos = JSON.stringify(PCOData);
+        
+                        res.status(200).send(pcos);//`{ "userdata": ${userData} }`);
+                        return;
+                    }
                 }
                 else
                 {
-                    res.sendStatus(400);
+                    let PCOData;
+                    
+                    if (platform.length > 0 && shaderModel.length > 0)
+                    {
+                        PCOData = await psoDB.GetInfoDataAfterVersion_ValidatedByMachinePlatformModel(ProjectUUID, MachineUUID, vInt[0], vInt[1], vInt[2], vInt[3], new Date(), platform, shaderModel);
+                    }
+                    else
+                    {
+                        PCOData = await psoDB.GetInfoDataAfterVersion_ValidatedByMachine(ProjectUUID, MachineUUID, vInt[0], vInt[1], vInt[2], vInt[3], new Date());
+                    }
+
+                    if(PCOData)
+                    {
+                        for(let pco of PCOData)
+                        {
+                            pco.pipelinecachedata = pco.pipelinecachedata.toString('base64');
+                        }
+
+                        let pcos = JSON.stringify(PCOData);
+        
+                        res.status(200).send(pcos);//`{ "userdata": ${userData} }`);
+                        return;
+                    }
                 }
+
+                res.sendStatus(400);
+
                 
             }
         }
@@ -265,6 +310,7 @@ async function entry()
                 let platform: string = "";
                 let shaderModel: string = "";
                 let extag: string = "";
+                let usePipeline: boolean = true;
 
                 if ("platform" in jsonbody)
                 {
@@ -281,33 +327,76 @@ async function entry()
                     extag = jsonbody["tag"];
                 }     
 
-                let PCOData;
-                
-                if (platform.length > 0 && shaderModel.length > 0)
+                if ("type" in jsonbody)
                 {
-                    PCOData = await psoDB.GetCacheDataAfterDate_ValidatedByMachinePlatformModel(ProjectUUID, AfterDate, MachineUUID, new Date(), platform, shaderModel, extag);
-                }
-                else
-                {
-                    PCOData = await psoDB.GetCacheDataAfterDate_ValidatedByMachine(ProjectUUID, AfterDate, MachineUUID, new Date(), extag);
-                }
-                
-
-                if(PCOData)
-                {
-                    for(let pco of PCOData)
+                    if (jsonbody["type"].toLowerCase() == "pipelinecache")
                     {
-                        pco.pipelinecachedata = pco.pipelinecachedata.toString('base64');
+                        usePipeline = true;
+                    }
+                    else if (jsonbody["type"].toLowerCase() == "shk")
+                    {
+                        usePipeline = false;
+                    }
+                    else
+                    {
+                        res.status(400).send("{ \"code\": -1, \"reason\": \"Bad Request. Type is not 'pipelinecache' or 'shk'.\" }");
+                    }
+                }     
+
+                if (usePipeline)
+                {
+                    let PCOData;
+                    
+                    if (platform.length > 0 && shaderModel.length > 0)
+                    {
+                        PCOData = await psoDB.GetCacheDataAfterDate_ValidatedByMachinePlatformModel(ProjectUUID, AfterDate, MachineUUID, new Date(), platform, shaderModel, extag);
+                    }
+                    else
+                    {
+                        PCOData = await psoDB.GetCacheDataAfterDate_ValidatedByMachine(ProjectUUID, AfterDate, MachineUUID, new Date(), extag);
                     }
 
-                    let pcos = JSON.stringify(PCOData);
-    
-                    res.status(200).send(pcos);//`{ "userdata": ${userData} }`);
+                    if(PCOData)
+                    {
+                        for(let pco of PCOData)
+                        {
+                            pco.pipelinecachedata = pco.pipelinecachedata.toString('base64');
+                        }
+
+                        let pcos = JSON.stringify(PCOData);
+        
+                        res.status(200).send(pcos);//`{ "userdata": ${userData} }`);
+                        return;
+                    }
                 }
                 else
                 {
-                    res.sendStatus(400);
+                    let PCOData;
+                    
+                    if (platform.length > 0 && shaderModel.length > 0)
+                    {
+                        PCOData = await psoDB.GetInfoDataAfterDate_ValidatedByMachinePlatformModel(ProjectUUID, AfterDate, MachineUUID, new Date(), platform, shaderModel);
+                    }
+                    else
+                    {
+                        PCOData = await psoDB.GetInfoDataAfterDate_ValidatedByMachine(ProjectUUID, AfterDate, MachineUUID, new Date());
+                    }
+
+                    if(PCOData)
+                    {
+                        for(let pco of PCOData)
+                        {
+                            pco.stablekeyinfodata = pco.stablekeyinfodata.toString('base64');
+                        }
+
+                        let pcos = JSON.stringify(PCOData);
+        
+                        res.status(200).send(pcos);//`{ "userdata": ${userData} }`);
+                        return;
+                    }
                 }
+
+                res.sendStatus(400);
                 
             }
         }
