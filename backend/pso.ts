@@ -271,7 +271,7 @@ async function entry()
                     {
                         for(let pco of PCOData)
                         {
-                            pco.pipelinecachedata = pco.pipelinecachedata.toString('base64');
+                            pco.stablekeyinfodata = pco.stablekeyinfodata.toString('base64');
                         }
 
                         let pcos = JSON.stringify(PCOData);
