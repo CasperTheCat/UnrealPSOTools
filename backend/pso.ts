@@ -607,6 +607,7 @@ async function entry()
                     let data: Buffer = Buffer.from(jsonbody["data"], 'base64');
                     let platform: string = "";
                     let shaderModel: string = "";
+                    let extag: string = "";
 
                     if ("platform" in jsonbody)
                     {
@@ -618,20 +619,25 @@ async function entry()
                         shaderModel = jsonbody["shadermodel"];
                     }
 
+                    if ("tag" in jsonbody)
+                    {
+                        extag = jsonbody["tag"];
+                    }    
+
                     let result: number = 1;
                     switch (jsonbody["shadertype"])
                     {
                         case "recorded":
-                            result = await AddNewPSOToProjectByUUIDs(psoDB, projectuuid, machineuuid, version, data, false, platform, shaderModel);
+                            result = await AddNewPSOToProjectByUUIDs(psoDB, projectuuid, machineuuid, version, data, false, platform, shaderModel, extag);
                             break;
                         case "stable":
-                            result = await AddNewPSOToProjectByUUIDs(psoDB, projectuuid, machineuuid, version, data, true, platform, shaderModel);
+                            result = await AddNewPSOToProjectByUUIDs(psoDB, projectuuid, machineuuid, version, data, true, platform, shaderModel, extag);
                             break;
                         case "projectshaderinfo":
-                            result = await AddNewShaderInfoToProjectByUUIDs(psoDB, projectuuid, machineuuid, version, data, false, platform, shaderModel);
+                            result = await AddNewShaderInfoToProjectByUUIDs(psoDB, projectuuid, machineuuid, version, data, false, platform, shaderModel, extag);
                             break;
                         case "globalshaderinfo":
-                            result = await AddNewShaderInfoToProjectByUUIDs(psoDB, projectuuid, machineuuid, version, data, true, platform, shaderModel);
+                            result = await AddNewShaderInfoToProjectByUUIDs(psoDB, projectuuid, machineuuid, version, data, true, platform, shaderModel, extag);
                             break;
                         default:
                             break;

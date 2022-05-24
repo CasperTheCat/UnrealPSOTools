@@ -210,7 +210,7 @@ async function getAllPCOsForUser(req, res, db)
 }
 
 
-async function AddNewPSOToProjectByUUIDs(psoDB: PipelineShaderObjectDB, projectuuid: Buffer, machineuuid: Buffer, version:string, data: Buffer, isStableKey: boolean, optionalPlatform: string = "", optionalSM: string = "")
+async function AddNewPSOToProjectByUUIDs(psoDB: PipelineShaderObjectDB, projectuuid: Buffer, machineuuid: Buffer, version:string, data: Buffer, isStableKey: boolean, optionalPlatform: string = "", optionalSM: string = "", optionalTag: string = "")
 {
     try
     {
@@ -235,7 +235,7 @@ async function AddNewPSOToProjectByUUIDs(psoDB: PipelineShaderObjectDB, projectu
             if (DoesMachineExist)
             {
 
-                result = await psoDB.AddPSO(projectuuid, hash, data, datenow, machineuuid, version, isStableKey, optionalPlatform, optionalSM); 
+                result = await psoDB.AddPSO(projectuuid, hash, data, datenow, machineuuid, version, isStableKey, optionalPlatform, optionalSM, optionalTag); 
                 return result;
             }
             else
@@ -255,7 +255,7 @@ async function AddNewPSOToProjectByUUIDs(psoDB: PipelineShaderObjectDB, projectu
     }
 }
 
-async function AddNewShaderInfoToProjectByUUIDs(psoDB: PipelineShaderObjectDB, projectuuid: Buffer, machineuuid: Buffer, version:string, data: Buffer, isGlobalKey: boolean, optionalPlatform: string = "", optionalSM: string = "")
+async function AddNewShaderInfoToProjectByUUIDs(psoDB: PipelineShaderObjectDB, projectuuid: Buffer, machineuuid: Buffer, version:string, data: Buffer, isGlobalKey: boolean, optionalPlatform: string = "", optionalSM: string = "", optionalTag: string = "")
 {
     try
     {
@@ -279,7 +279,7 @@ async function AddNewShaderInfoToProjectByUUIDs(psoDB: PipelineShaderObjectDB, p
             let result = 1;
             if (DoesMachineExist)
             {
-                result = await psoDB.AddKeyInfo(projectuuid, hash, data, datenow, machineuuid, version, isGlobalKey, optionalPlatform, optionalSM); 
+                result = await psoDB.AddKeyInfo(projectuuid, hash, data, datenow, machineuuid, version, isGlobalKey, optionalPlatform, optionalSM, optionalTag); 
                 return result;
             }
             else

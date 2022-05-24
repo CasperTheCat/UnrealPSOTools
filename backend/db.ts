@@ -1201,7 +1201,10 @@ class PipelineShaderObjectDB
                 versionMinor INT NOT NULL, \
                 versionRevision INT NOT NULL, \
                 versionBuild INT NOT NULL, \
-                global BOOLEAN DEFAULT false \
+                global BOOLEAN DEFAULT false, \
+                saveMode INT DEFAULT 100, \
+                ordering INT DEFAULT 100, \
+                extratag VARCHAR(24) \
             );"
         );
 
@@ -1604,7 +1607,7 @@ class PipelineShaderObjectDB
     //     return this.pgdb.manyOrNone(this.PSGetTagList, []);
     // }
 
-    async AddKeyInfo(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isGlobalKey: boolean = false, optionalPlatform: string = "", optionalSM: string = "")
+    async AddKeyInfo(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isGlobalKey: boolean = false, optionalPlatform: string = "", optionalSM: string = "", optionalTag: string = "")
     {
         try
         {
@@ -1641,7 +1644,7 @@ class PipelineShaderObjectDB
                 let ProjectIdentifier = await this.GetProjectIDByUUID(projectuuid);
                 if(ProjectIdentifier)
                 {
-                    let res = await this.pgdb.one("INSERT INTO stablekeyinfos (projectid, dataid, datetime, versionMajor, versionMinor, versionRevision, versionBuild, global) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING stablekeyinfoid;", [
+                    let res = await this.pgdb.one("INSERT INTO stablekeyinfos (projectid, dataid, datetime, versionMajor, versionMinor, versionRevision, versionBuild, global, extratag) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING stablekeyinfoid;", [
                         ProjectIdentifier.projectid,
                         PSODataIdentifier,
                         date,
@@ -1651,7 +1654,8 @@ class PipelineShaderObjectDB
                         vInt[3],
                         isGlobalKey,
                         optionalPlatform,
-                        optionalSM
+                        optionalSM,
+                        optionalTag
                     ]
                     );
     
