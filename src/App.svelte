@@ -8,6 +8,9 @@
 	import Card from "./Card.svelte";
 	import Image from "./Image.svelte";
 
+	let maxDate: Date = new Date("2077-01-01 00:00:00");
+	let currentDate: Date = new Date();
+
 	let displayname: string = "";
 	let isLoggedIn: boolean = false;
 	let AliveCheck;
@@ -1297,11 +1300,11 @@
 				</span>
 				<span class="centeringnoflex">
 					<h4>Valid From</h4>
-					<DateInput bind:value={orgProjectMachineValidFrom} />
+					<DateInput min={currentDate} max={maxDate} bind:value={orgProjectMachineValidFrom} />
 				</span>
 				<span class="centeringnoflex">
 					<h4>Valid Until</h4>
-					<DateInput bind:value={orgProjectMachineValidUntil} />
+					<DateInput min={currentDate} max={maxDate} bind:value={orgProjectMachineValidUntil} />
 				</span>
 				<span class="centeringnoflex">
 					<span class="centeringnospace">
