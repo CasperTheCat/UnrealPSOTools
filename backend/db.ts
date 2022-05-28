@@ -191,7 +191,12 @@ class PipelineShaderObjectDB
                 pipelinecaches.versionMajor, \
                 pipelinecaches.versionMinor, \
                 pipelinecaches.versionRevision, \
-                pipelinecaches.versionBuild \
+                pipelinecaches.versionBuild, \
+                pipelinecaches.datetime, \
+                pipelinecaches.platform, \
+                pipelinecaches.shaderModel, \
+                pipelinecaches.extratag, \
+                pipelinecaches.stable \
             FROM \
                 pipelinecachedata, pipelinecaches, project_machine_perms, machines, projects \
             WHERE \
@@ -218,7 +223,12 @@ class PipelineShaderObjectDB
                 pipelinecaches.versionMajor, \
                 pipelinecaches.versionMinor, \
                 pipelinecaches.versionRevision, \
-                pipelinecaches.versionBuild \
+                pipelinecaches.versionBuild, \
+                pipelinecaches.datetime, \
+                pipelinecaches.platform, \
+                pipelinecaches.shaderModel, \
+                pipelinecaches.extratag, \
+                pipelinecaches.stable \
             FROM \
                 pipelinecachedata, pipelinecaches, project_machine_perms, machines, projects \
             WHERE \
@@ -247,7 +257,12 @@ class PipelineShaderObjectDB
                 stablekeyinfos.versionMajor, \
                 stablekeyinfos.versionMinor, \
                 stablekeyinfos.versionRevision, \
-                stablekeyinfos.versionBuild \
+                stablekeyinfos.versionBuild, \
+                stablekeyinfos.datetime, \
+                stablekeyinfos.platform, \
+                stablekeyinfos.shaderModel, \
+                stablekeyinfos.extratag, \
+                stablekeyinfos.global \
             FROM \
                 stablekeyinfodata, stablekeyinfos, project_machine_perms, machines, projects \
             WHERE \
@@ -273,7 +288,12 @@ class PipelineShaderObjectDB
                 stablekeyinfos.versionMajor, \
                 stablekeyinfos.versionMinor, \
                 stablekeyinfos.versionRevision, \
-                stablekeyinfos.versionBuild \
+                stablekeyinfos.versionBuild, \
+                stablekeyinfos.datetime, \
+                stablekeyinfos.platform, \
+                stablekeyinfos.shaderModel, \
+                stablekeyinfos.extratag, \
+                stablekeyinfos.global \
             FROM \
                 stablekeyinfodata, stablekeyinfos, project_machine_perms, machines, projects \
             WHERE \
@@ -302,7 +322,12 @@ class PipelineShaderObjectDB
                 pipelinecaches.versionMajor, \
                 pipelinecaches.versionMinor, \
                 pipelinecaches.versionRevision, \
-                pipelinecaches.versionBuild \
+                pipelinecaches.versionBuild, \
+                pipelinecaches.datetime, \
+                pipelinecaches.platform, \
+                pipelinecaches.shaderModel, \
+                pipelinecaches.extratag, \
+                pipelinecaches.stable \
             FROM \
                 pipelinecachedata, pipelinecaches, project_machine_perms, machines, projects \
             WHERE \
@@ -332,7 +357,12 @@ class PipelineShaderObjectDB
                 pipelinecaches.versionMajor, \
                 pipelinecaches.versionMinor, \
                 pipelinecaches.versionRevision, \
-                pipelinecaches.versionBuild \
+                pipelinecaches.versionBuild, \
+                pipelinecaches.datetime, \
+                pipelinecaches.platform, \
+                pipelinecaches.shaderModel, \
+                pipelinecaches.extratag, \
+                pipelinecaches.stable \
             FROM \
                 pipelinecachedata, pipelinecaches, project_machine_perms, machines, projects \
             WHERE \
@@ -364,7 +394,12 @@ class PipelineShaderObjectDB
                 stablekeyinfos.versionMajor, \
                 stablekeyinfos.versionMinor, \
                 stablekeyinfos.versionRevision, \
-                stablekeyinfos.versionBuild \
+                stablekeyinfos.versionBuild, \
+                stablekeyinfos.datetime, \
+                stablekeyinfos.platform, \
+                stablekeyinfos.shaderModel, \
+                stablekeyinfos.extratag, \
+                stablekeyinfos.global \
             FROM \
                 stablekeyinfodata, stablekeyinfos, project_machine_perms, machines, projects \
             WHERE \
@@ -397,7 +432,12 @@ class PipelineShaderObjectDB
                 stablekeyinfos.versionMajor, \
                 stablekeyinfos.versionMinor, \
                 stablekeyinfos.versionRevision, \
-                stablekeyinfos.versionBuild \
+                stablekeyinfos.versionBuild, \
+                stablekeyinfos.datetime, \
+                stablekeyinfos.platform, \
+                stablekeyinfos.shaderModel, \
+                stablekeyinfos.extratag, \
+                stablekeyinfos.global \
             FROM \
                 stablekeyinfodata, stablekeyinfos, project_machine_perms, machines, projects \
             WHERE \
