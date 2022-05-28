@@ -1684,7 +1684,7 @@ class PipelineShaderObjectDB
                 let ProjectIdentifier = await this.GetProjectIDByUUID(projectuuid);
                 if(ProjectIdentifier)
                 {
-                    let res = await this.pgdb.one("INSERT INTO stablekeyinfos (projectid, dataid, datetime, versionMajor, versionMinor, versionRevision, versionBuild, global, extratag) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING stablekeyinfoid;", [
+                    let res = await this.pgdb.one("INSERT INTO stablekeyinfos (projectid, dataid, datetime, versionMajor, versionMinor, versionRevision, versionBuild, global, platform, shaderModel, extratag) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING stablekeyinfoid;", [
                         ProjectIdentifier.projectid,
                         PSODataIdentifier,
                         date,
