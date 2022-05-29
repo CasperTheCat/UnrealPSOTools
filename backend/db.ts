@@ -443,8 +443,8 @@ class PipelineShaderObjectDB
             WHERE \
                 stablekeyinfodata.stablekeyinfodataid = stablekeyinfos.dataid AND \
                 stablekeyinfos.datetime > $2 AND \
-                pipelinecaches.platform = $5 AND \
-                pipelinecaches.shaderModel = $6 AND \
+                stablekeyinfos.platform = $5 AND \
+                stablekeyinfos.shaderModel = $6 AND \
                 stablekeyinfos.projectid = projects.projectid AND \
                 projects.uuid = $1 AND \
                 machines.fingerprint = $3 AND \
