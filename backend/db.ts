@@ -6,7 +6,6 @@
 //     connectionString: 'postgres://user@pass@host:port/dbname',
 //     idleTimeoutMillis: 30000
 // });
-import AsyncLock from "async-lock";
 import crypto from "crypto";
 import type path from "path";
 import pgPromise from "pg-promise";
@@ -1195,7 +1194,7 @@ class PipelineShaderObjectDB
             CREATE TABLE IF NOT EXISTS pipelinecachedata \
             ( \
                 pipelinecachedataid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
-                hash BYTEA, \
+                hash BYTEA UNIQUE, \
                 pipelinecachedata BYTEA NOT NULL \
             );"
         );
@@ -1224,7 +1223,7 @@ class PipelineShaderObjectDB
             CREATE TABLE IF NOT EXISTS stablekeyinfodata \
             ( \
                 stablekeyinfodataid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
-                hash BYTEA, \
+                hash BYTEA UNIQUE, \
                 stablekeyinfodata BYTEA NOT NULL \
             );"
         );
@@ -1648,35 +1647,90 @@ class PipelineShaderObjectDB
     //     return this.pgdb.manyOrNone(this.PSGetTagList, []);
     // }
 
+    PSSyncUpdatePSO = new PreparedStatement(
+        {
+            name: "PSSyncUpdatePSO",
+            text: "WITH input_data(hash, pipelinecachedata) as (VALUES($1::bytea, $2::bytea)), \
+            insertrow as (\
+                INSERT INTO pipelinecachedata (hash, pipelinecachedata) \
+                SELECT * FROM input_data \
+                ON CONFLICT (hash) DO NOTHING \
+                RETURNING pipelinecachedataid, hash \
+            ), \
+            selectrow as (\
+                SELECT 'i'::\"char\" as source, pipelinecachedataid, hash \
+                FROM insertrow \
+                UNION ALL \
+                SELECT 's'::\"char\" as source, ski.pipelinecachedataid, hash \
+                FROM input_data \
+                JOIN pipelinecachedata ski USING (hash) \
+            ), \
+            upsertrow as ( \
+                INSERT INTO pipelinecachedata AS skid (hash, pipelinecachedata) \
+                SELECT i.* \
+                FROM input_data i \
+                LEFT JOIN selectrow sr USING (hash) \
+                WHERE sr.hash IS NULL \
+                ON CONFLICT (hash) DO UPDATE \
+                SET hash = skid.hash \
+                RETURNING 'u'::\"char\" as source, pipelinecachedataid \
+            )\
+            SELECT source, pipelinecachedataid FROM selectrow \
+            UNION ALL TABLE upsertrow;\
+            "
+        }
+    );
+
+    PSSyncUpdateStableKey = new PreparedStatement(
+        {
+            name: "PSSyncUpdateStableKey",
+            text: "WITH input_data(hash, stablekeyinfodata) as (VALUES($1::bytea, $2::bytea)), \
+            insertrow as (\
+                INSERT INTO stablekeyinfodata (hash, stablekeyinfodata) \
+                SELECT * FROM input_data \
+                ON CONFLICT (hash) DO NOTHING \
+                RETURNING stablekeyinfodataid, hash \
+            ), \
+            selectrow as (\
+                SELECT 'i'::\"char\" as source, stablekeyinfodataid, hash \
+                FROM insertrow \
+                UNION ALL \
+                SELECT 's'::\"char\" as source, ski.stablekeyinfodataid, hash \
+                FROM input_data \
+                JOIN stablekeyinfodata ski USING (hash) \
+            ), \
+            upsertrow as ( \
+                INSERT INTO stablekeyinfodata AS skid (hash, stablekeyinfodata) \
+                SELECT i.* \
+                FROM input_data i \
+                LEFT JOIN selectrow sr USING (hash) \
+                WHERE sr.hash IS NULL \
+                ON CONFLICT (hash) DO UPDATE \
+                SET hash = skid.hash \
+                RETURNING 'u'::\"char\" as source, stablekeyinfodataid \
+            )\
+            SELECT source, stablekeyinfodataid FROM selectrow \
+            UNION ALL TABLE upsertrow;\
+            "
+        }
+    );
+
     async GetShaderDataIdentifier(hash: Buffer, pso: Buffer)
     {
         // Check if data exists
-        // CRITICAL REGION START
-        let Lock = new AsyncLock();
-        return Lock.acquire(hash.toString('hex'),
-            async () =>
-            {
-                let PSODataIdentifier:number = -1;
-                let DoesDataForHashExist = await this.GetShaderInfoDataByHashShort(hash);
-                if(!DoesDataForHashExist)
-                {
-                    // Make it, it's a new hash
-                    let AddData = await this.pgdb.one("INSERT INTO stablekeyinfodata (hash, stablekeyinfodata) VALUES ($1, $2) RETURNING stablekeyinfodataid;", [
-                        hash,
-                        pso
-                    ]
-                    );
-        
-                    PSODataIdentifier = AddData.stablekeyinfodataid;
-                }
-                else
-                {
-                    PSODataIdentifier = DoesDataForHashExist.stablekeyinfodataid;
-                }
-        
-                return PSODataIdentifier;
-            }
+        let PSODataIdentifier:number = -1;
+        let AddData = await this.pgdb.one(this.PSSyncUpdateStableKey, [
+            hash,
+            pso
+        ]
         );
+
+        if(AddData)
+        {
+            PSODataIdentifier = AddData.stablekeyinfodataid;
+        }
+
+        return PSODataIdentifier;
     }
 
     async AddKeyInfo(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isGlobalKey: boolean = false, optionalPlatform: string = "", optionalSM: string = "", optionalTag: string = "")
@@ -1733,33 +1787,19 @@ class PipelineShaderObjectDB
 
     async GetPSODataIdentifier(hash: Buffer, pso: Buffer)
     {
-        // Check if data exists
-        // CRITICAL REGION START
-        let Lock = new AsyncLock();
-        return Lock.acquire(hash.toString('hex'),
-            async () =>
-            {
-                let PSODataIdentifier:number = -1;
-                let DoesDataForHashExist = await this.GetPipelineCacheDataByHashShort(hash);
-                if(!DoesDataForHashExist)
-                {
-                    // Make it, it's a new hash
-                    let AddData = await this.pgdb.one("INSERT INTO pipelinecachedata (hash, pipelinecachedata) VALUES ($1, $2) RETURNING pipelinecachedataid;", [
-                        hash,
-                        pso
-                    ]
-                    );
-
-                    PSODataIdentifier = AddData.pipelinecachedataid;
-                }
-                else
-                {
-                    PSODataIdentifier = DoesDataForHashExist.pipelinecachedataid;
-                }
-        
-                return PSODataIdentifier;
-            }
+        let PSODataIdentifier:number = -1;
+        let AddData = await this.pgdb.one(this.PSSyncUpdatePSO, [
+            hash,
+            pso
+        ]
         );
+
+        if(AddData)
+        {
+            PSODataIdentifier = AddData.pipelinecachedataid;
+        }
+
+        return PSODataIdentifier;
     }
 
     async AddPSO(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isStable: boolean = false, optionalPlatform: string = "", optionalSM: string = "", optionalTag: string = "")
