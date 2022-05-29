@@ -11,8 +11,9 @@ uploadURL = "/api/pco/new/"
 machineID = secrets.token_hex(16)
 version = "0.0.1.1"
 
-machineID = "9A256B71184901D3E60361F4EC160303A09D1AF0BF3E3B4758D0CE5563AC0E22"
-projid = "8ADEA8076EB5428A7CF34BFBCFFB656F53DC8C1872BF6D2558D57202D62B787E"
+with open("keystore", "r") as f:
+    machineID = f.readline()
+    projid = f.readline()
 
 uploadRun = uploadURL.format(projid, machineID, version)
 
@@ -27,14 +28,18 @@ jsonBody = {
     "project": projid,
     "version": version,
     "shadertype": "recorded",
-    "platform": "Direct",
-    "shadermodel": "SM5",
+    "platform": "DirectX 12",
+    "shadermodel": "SF_VULKAN_SM5",
     "data": base64.b64encode(data).decode('utf-8')
 }
 
 #print(base64.b64encode(data).decode('utf-8'))
+ps = []
 
-p = requests.post("http://127.0.0.1:3000" + uploadURL, data=json.dumps(jsonBody), headers=header)
+for i in range(0, 100):
+    p = requests.post("http://127.0.0.1:3000" + uploadURL, data=json.dumps(jsonBody), headers=header)
+    ps.append(p)
 
-print(p.status_code)
-print(p.json())
+for i, p in enumerate(ps):
+    print("Request {} returned {}".format(i, p.status_code))
+    #print(p.json())

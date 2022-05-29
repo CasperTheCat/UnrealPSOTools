@@ -6,6 +6,7 @@
 //     connectionString: 'postgres://user@pass@host:port/dbname',
 //     idleTimeoutMillis: 30000
 // });
+import AsyncLock from "async-lock";
 import crypto from "crypto";
 import type path from "path";
 import pgPromise from "pg-promise";
@@ -1647,18 +1648,15 @@ class PipelineShaderObjectDB
     //     return this.pgdb.manyOrNone(this.PSGetTagList, []);
     // }
 
-    async AddKeyInfo(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isGlobalKey: boolean = false, optionalPlatform: string = "", optionalSM: string = "", optionalTag: string = "")
+    async GetShaderDataIdentifier(hash: Buffer, pso: Buffer)
     {
-        try
-        {
-            // First, check that machine has permissions for the project
-            let DoesMachineHaveSubmitForProject = await this.GetMachinePermissionsForProjectByUUIDs(projectuuid, machine, new Date());
-            if(DoesMachineHaveSubmitForProject && DoesMachineHaveSubmitForProject.permsubmitcaches)
+        // Check if data exists
+        // CRITICAL REGION START
+        let Lock = new AsyncLock();
+        return Lock.acquire(hash.toString('hex'),
+            async () =>
             {
                 let PSODataIdentifier:number = -1;
-                let vInt = StringToVersion(version);
-
-                // Check if data exists
                 let DoesDataForHashExist = await this.GetShaderInfoDataByHashShort(hash);
                 if(!DoesDataForHashExist)
                 {
@@ -1668,17 +1666,29 @@ class PipelineShaderObjectDB
                         pso
                     ]
                     );
-
-                    //console.log(`Added Data ${AddData["pipelinecachedataid"]}`)
-
+        
                     PSODataIdentifier = AddData.stablekeyinfodataid;
                 }
                 else
                 {
                     PSODataIdentifier = DoesDataForHashExist.stablekeyinfodataid;
                 }
-                console.log(PSODataIdentifier);
+        
+                return PSODataIdentifier;
+            }
+        );
+    }
 
+    async AddKeyInfo(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isGlobalKey: boolean = false, optionalPlatform: string = "", optionalSM: string = "", optionalTag: string = "")
+    {
+        try
+        {
+            // First, check that machine has permissions for the project
+            let DoesMachineHaveSubmitForProject = await this.GetMachinePermissionsForProjectByUUIDs(projectuuid, machine, new Date());
+            if(DoesMachineHaveSubmitForProject && DoesMachineHaveSubmitForProject.permsubmitcaches)
+            {
+                let PSODataIdentifier:number = await this.GetShaderDataIdentifier(hash, pso);
+                let vInt = StringToVersion(version);
 
                 // Okay, Get projectID
                 let ProjectIdentifier = await this.GetProjectIDByUUID(projectuuid);
@@ -1721,18 +1731,15 @@ class PipelineShaderObjectDB
         }
     }
 
-    async AddPSO(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isStable: boolean = false, optionalPlatform: string = "", optionalSM: string = "", optionalTag: string = "")
+    async GetPSODataIdentifier(hash: Buffer, pso: Buffer)
     {
-        try
-        {
-            // First, check that machine has permissions for the project
-            let DoesMachineHaveSubmitForProject = await this.GetMachinePermissionsForProjectByUUIDs(projectuuid, machine, new Date());
-            if(DoesMachineHaveSubmitForProject && DoesMachineHaveSubmitForProject.permsubmitcaches)
+        // Check if data exists
+        // CRITICAL REGION START
+        let Lock = new AsyncLock();
+        return Lock.acquire(hash.toString('hex'),
+            async () =>
             {
                 let PSODataIdentifier:number = -1;
-                let vInt = StringToVersion(version);
-
-                // Check if data exists
                 let DoesDataForHashExist = await this.GetPipelineCacheDataByHashShort(hash);
                 if(!DoesDataForHashExist)
                 {
@@ -1743,16 +1750,28 @@ class PipelineShaderObjectDB
                     ]
                     );
 
-                    //console.log(`Added Data ${AddData["pipelinecachedataid"]}`)
-
                     PSODataIdentifier = AddData.pipelinecachedataid;
                 }
                 else
                 {
                     PSODataIdentifier = DoesDataForHashExist.pipelinecachedataid;
                 }
-                console.log(PSODataIdentifier);
+        
+                return PSODataIdentifier;
+            }
+        );
+    }
 
+    async AddPSO(projectuuid: Buffer, hash: Buffer, pso: Buffer, date: Date, machine: Buffer, version: string, isStable: boolean = false, optionalPlatform: string = "", optionalSM: string = "", optionalTag: string = "")
+    {
+        try
+        {
+            // First, check that machine has permissions for the project
+            let DoesMachineHaveSubmitForProject = await this.GetMachinePermissionsForProjectByUUIDs(projectuuid, machine, new Date());
+            if(DoesMachineHaveSubmitForProject && DoesMachineHaveSubmitForProject.permsubmitcaches)
+            {
+                let PSODataIdentifier:number = await this.GetPSODataIdentifier(hash, pso);
+                let vInt = StringToVersion(version);
 
                 // Okay, Get projectID
                 let ProjectIdentifier = await this.GetProjectIDByUUID(projectuuid);

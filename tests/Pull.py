@@ -6,13 +6,13 @@ import base64
 import json
 
 uploadURL = "/api/pco/date/after/"
-uploadURL = "/api/pco/version/after"
+#uploadURL = "/api/pco/version/after"
 
-machineID = secrets.token_hex(16)
 version = "0.0.1.1"
 
-machineID = "9A256B71184901D3E60361F4EC160303A09D1AF0BF3E3B4758D0CE5563AC0E22"
-projid = "8ADEA8076EB5428A7CF34BFBCFFB656F53DC8C1872BF6D2558D57202D62B787E"
+with open("keystore", "r") as f:
+    machineID = f.readline()
+    projid = f.readline()
 
 uploadRun = uploadURL.format(projid, machineID)
 
@@ -23,8 +23,8 @@ requestData = {
     "machine": machineID,
     "project": projid,
     "version": version,
-    "platform": "DirectX",
-    "shadermodel": "SM5"
+    "platform": "DirectX 12",
+    "shadermodel": "PCD3D_SM5"
 }
 
 p = requests.post("http://127.0.0.1:3000" + uploadURL, data=json.dumps(requestData), headers=header)
