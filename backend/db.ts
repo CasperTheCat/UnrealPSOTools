@@ -671,88 +671,7 @@ class PipelineShaderObjectDB
                 versionRevision = $5 AND \
                 versionBuild = $6"
         }
-    );
-
-    // PSGetPipelineCachePathByHash = new PreparedStatement(
-    //     {
-    //         name: "PSGetPipelineCachePathByHash",
-    //         text: "SELECT path FROM pipelinecaches WHERE normalhash = $1"
-    //     }
-    // );
-
-    // PSGetPipelineCacheTagsByHash = new PreparedStatement(
-    //     {
-    //         name: "PSGetPipelineCacheTagsByHash",
-    //         text: "SELECT tags FROM pipelinecaches WHERE normalhash = $1"
-    //     }
-    // );
-
-    // PSGetPipelineCacheByTag = new PreparedStatement(
-    //     {
-    //         name: "PSGetPipelineCacheByTag",
-    //         text: "SELECT * FROM pipelinecaches WHERE live = true AND tags @@ $1::tsquery"
-    //     }
-    // );
-
-    // PSGetPipelineCacheByTagShort = new PreparedStatement(
-    //     {
-    //         name: "PSGetPipelineCacheByTagShort",
-    //         text: "SELECT height, width, normalhash FROM pipelinecaches WHERE live = true AND tags @@ $1::tsquery"
-    //     }
-    // );
-
-    // PSUpdatePipelineCacheLocationByID = new PreparedStatement(
-    //     {
-    //         name: "PSUpdatePipelineCacheLocationByID",
-    //         text: "UPDATE pipelinecaches SET path = $2::text, live = true::boolean WHERE pipelinecacheid = $1"
-    //     }
-    // );
-
-    // PSRenewToken = new PreparedStatement(
-    //     {
-    //         name: "PSDeleteTag",
-    //         text: "UPDATE pipelinecaches SET tags = ts_delete(tags::tsvector, $2::text) WHERE tags @@ $1::tsquery"
-    //     }
-    // );
-
-    // PSDeleteTag = new PreparedStatement(
-    //     {
-    //         name: "PSDeleteTag",
-    //         text: "UPDATE pipelinecaches SET tags = array_to_tsvector(array_remove(tsvector_to_array(tags), $2::text)) WHERE tags @@ $1::tsquery"
-    //     }
-    // );
-    
-    // // PSRenameTag = new PreparedStatement(
-    // //     {
-    // //         name: "PSRenameTag",
-    // //         text: "UPDATE pipelinecaches SET tags = tsvector_concat(ts_delete(tags, $3::text), $2) WHERE tags @@ $1::tsquery"
-    // //     }
-    // // );
-    // PSRenameTag = new PreparedStatement(
-    //     {
-    //         name: "PSRenameTag",
-    //         text: "UPDATE pipelinecaches SET tags = array_to_tsvector(array_append(array_remove(tsvector_to_array(tags), $3::text), $2::text)) WHERE tags @@ $1::tsquery"
-    //     }
-    // );
-    // // PSRenameTag = new PreparedStatement(
-    // //     {
-    // //         name: "PSRenameTag",
-    // //         text: "UPDATE pipelinecaches SET tags = tsvector_concat(array_to_tsvector(array_remove(tsvector_to_array(tags), $3::text)), $2::tsvector) WHERE tags @@ $1::tsquery"
-    // //     }
-    // // );    
-
-    // PSAppendTag = new PreparedStatement(
-    //     {
-    //         name: "PSAppendTag",
-    //         text: "UPDATE pipelinecaches SET tags = array_to_tsvector(array_append(tsvector_to_array(tags), $2::text)) WHERE tags @@ $1::tsquery"
-    //     }
-    // );   
-    // // PSAppendTag = new PreparedStatement(
-    // //     {
-    // //         name: "PSAppendTag",
-    // //         text: "UPDATE pipelinecaches SET tags = tsvector_concat(tags, $2::tsvector) WHERE tags @@ $1::tsquery"
-    // //     }
-    // // );   
+    ); 
     
     PSAddPipelineCacheToBoard = new PreparedStatement(
         {
@@ -765,13 +684,6 @@ class PipelineShaderObjectDB
                     AND machines.fingerprint = $1"
         }
     );  
-
-    // PSAddUserToOrganisation = new PreparedStatement(
-    //     {
-    //         name: "PSAddUserToOrganisation",
-    //         text: "INSERT INTO org_user (orgid, userid) VALUES ($1, $2);"
-    //     }
-    // );  
 
     PSAddUserToOrganisationUserPerms = new PreparedStatement(
         {
@@ -801,135 +713,6 @@ class PipelineShaderObjectDB
             ;"
         }
     );
-
-    
-
-    // PSRemovePipelineCacheFromBoard = new PreparedStatement(
-    //     {
-    //         name: "PSRemovePipelineCacheFromBoard",
-    //         text: "UPDATE machines \
-    //             SET pipelinecacheids = array_remove(machines.pipelinecacheids, pipelinecaches.pipelinecacheid) \
-    //             FROM pipelinecaches \
-    //                 WHERE pipelinecaches.normalhash = $2 \
-    //                 AND pipelinecaches.pipelinecacheid = ANY(machines.pipelinecacheids) \
-    //                 AND machines.machineid = $1"
-    //     }
-    // );  
-
-
-    // PSUpdatePipelineCacheTagsByID = new PreparedStatement(
-    //     {
-    //         name: "PSUpdatePipelineCacheTagsByID",
-    //         text: "UPDATE pipelinecaches SET tags = $2::tsvector WHERE pipelinecacheid = $1"
-    //     }
-    // );
-
-    // PSUpdatePipelineCacheTagsByHash = new PreparedStatement(
-    //     {
-    //         name: "PSUpdatePipelineCacheTagsByHash",
-    //         text: "UPDATE pipelinecaches SET tags = $2::tsvector WHERE normalhash = $1"
-    //     }
-    // );
-
-    // PSGetAllPipelineCaches = new PreparedStatement(
-    //     {
-    //         name: "PSGetAllPipelineCaches",
-    //         text: "SELECT * FROM pipelinecaches"
-    //     }
-    // );
-
-    // PSGetAllPipelineCachesShort = new PreparedStatement(
-    //     {
-    //         name: "PSGetAllPipelineCachesShort",
-    //         text: "SELECT hash FROM pipelinecaches"
-    //     }
-    // );
-
-    // PSGetAllPipelineCachesMark = new PreparedStatement(
-    //     {
-    //         name: "PSGetAllPipelineCachesMark",
-    //         text: "SELECT pipelinecacheid, path FROM pipelinecaches WHERE live = true"
-    //     }
-    // );
-
-    // PSMarkPipelineCacheDeletedByID = new PreparedStatement(
-    //     {
-    //         name: "PSMarkPipelineCacheDeletedByID",
-    //         text: "UPDATE pipelinecaches SET live = false::boolean WHERE pipelinecacheid = $1"
-    //     }
-    // );
-
-    // PSMarkPipelineCacheDeletedByHash = new PreparedStatement(
-    //     {
-    //         name: "PSMarkPipelineCacheDeletedByHash",
-    //         text: "UPDATE pipelinecaches SET live = false::boolean WHERE normalhash = $1"
-    //     }
-    // );
-
-    // PSMarkPipelineCacheLiveByID = new PreparedStatement(
-    //     {
-    //         name: "PSMarkPipelineCacheLiveByID",
-    //         text: "UPDATE pipelinecaches SET live = true::boolean WHERE pipelinecacheid = $1"
-    //     }
-    // );
-
-    // PSMarkPipelineCacheLiveByHash = new PreparedStatement(
-    //     {
-    //         name: "PSMarkPipelineCacheLiveByHash",
-    //         text: "UPDATE pipelinecaches SET live = true::boolean WHERE normalhash = $1"
-    //     }
-    // );
-
-    // //select * from pipelinecaches where cast(normalhash as text) LIKE '_x{}%';
-    // // TODO: This needs to handle getting pipelinecaches and returning many from this
-    // PSGetPipelineCachesByBoard = new PreparedStatement(
-    //     {
-    //         name: "PSGetPipelineCachesByBoard",
-    //         text: "SELECT pipelinecaches.* FROM pipelinecaches, machines WHERE pipelinecaches.live = true AND pipelinecaches.pipelinecacheid = ANY(machines.pipelinecacheids) AND machines.machineid = $1"
-    //     }
-    // );
-
-    // PSGetPipelineCachesByBoardShort = new PreparedStatement(
-    //     {
-    //         name: "PSGetPipelineCachesByBoardShort",
-    //         text: "SELECT pipelinecaches.width, pipelinecaches.height, pipelinecaches.normalhash FROM pipelinecaches, machines WHERE pipelinecaches.live = true AND pipelinecaches.pipelinecacheid = ANY(machines.pipelinecacheids) AND machines.machineid = $1"
-    //     }
-    // );
-
-    // PSGetPipelineCachesByBoardSearchShort = new PreparedStatement(
-    //     {
-    //         name: "PSGetPipelineCachesByBoardSearchShort",
-    //         text: "SELECT pipelinecaches.width, pipelinecaches.height, pipelinecaches.normalhash FROM pipelinecaches, machines WHERE pipelinecaches.live = true AND pipelinecaches.pipelinecacheid = ANY(machines.pipelinecacheids) AND pipelinecaches.tags @@ $1::tsquery AND machines.machineid = $2"
-    //     }
-    // );
-
-    // PSGetPipelineCacheCount = new PreparedStatement(
-    //     {
-    //         name: "PSGetPipelineCacheCount",
-    //         text: "SELECT COUNT(pipelinecacheid) FROM pipelinecaches WHERE live = true"
-    //     }
-    // );
-
-    // PSGetPipelineCacheCountByTag = new PreparedStatement(
-    //     {
-    //         name: "PSGetPipelineCacheCountByTag",
-    //         text: "SELECT COUNT(pipelinecacheid) FROM pipelinecaches WHERE live = true AND tags @@ $1::tsquery"
-    //     }
-    // );
-
-    // PSGetUntaggedPipelineCaches = new PreparedStatement(
-    //     {
-    //         name: "PSGetUntaggedPipelineCaches",
-    //         text: "SELECT height, width, normalhash FROM pipelinecaches WHERE live = true AND tags = ''"
-    //     }
-    // );
-
-    // PSGetTagList = new PreparedStatement(
-    //     {
-    //         name: "PSGetTagList",
-    //         text: "SELECT array_agg(distinct(n)) FROM pipelinecaches, unnest(tsvector_to_array(tags)) as n WHERE live = true"
-    //     }
-    // );
 
 
     constructor()
@@ -1065,37 +848,10 @@ class PipelineShaderObjectDB
                 displayname VARCHAR \
             ); \
         ");
-
-        //machines INT ARRAY REFERENCES machines (machineid), \
-        //projects INT ARRAY REFERENCES projects (projectid), \
     }
 
     async InitialiseOrganisationLinkTables()
     {
-        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS org_user \
-        //     ( \
-        //         orgid INT REFERENCES organisations (orgid) ON DELETE CASCADE, \
-        //         userid INT REFERENCES users (userid) ON UPDATE CASCADE ON DELETE CASCADE, \
-        //         CONSTRAINT org_user_key PRIMARY KEY (orgid, userid ) \
-        //     ); \
-        // ");
-
-        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS org_machine \
-        //     ( \
-        //         orgid INT REFERENCES organisations (orgid) ON DELETE CASCADE, \
-        //         machineid INT REFERENCES machines (machineid) ON UPDATE CASCADE ON DELETE CASCADE, \
-        //         CONSTRAINT org_machine_key PRIMARY KEY (orgid, machineid)\
-        //     ); \
-        // ");
-
-        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS org_project \
-        //     ( \
-        //         orgid INT REFERENCES organisations (orgid) ON DELETE CASCADE, \
-        //         projectid INT REFERENCES projects (projectid) ON UPDATE CASCADE ON DELETE CASCADE, \
-        //         CONSTRAINT org_project_key PRIMARY KEY (orgid, projectid)\
-        //     ); \
-        // ");
-
         await this.pgdb.query("CREATE TABLE IF NOT EXISTS organisation_user_perms \
             ( \
                 orgid INT REFERENCES organisations (orgid) ON DELETE CASCADE, \
@@ -1122,19 +878,8 @@ class PipelineShaderObjectDB
         ");
     }
 
-    //permissionLevelRead BOOLEAN, \
-    //permissionLevelWrite BOOLEAN, \
-
     async InitialiseProjects()
     {        
-        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS projects \
-        //     ( \
-        //         projectid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
-        //         displayname VARCHAR, \
-        //         uuid BYTEA \
-        //     ); \
-        // ");
-
         console.log("[DBUG][INFO] CREATE TABLE IF NOT EXISTS projects")
         await this.pgdb.query("CREATE TABLE IF NOT EXISTS projects \
             ( \
@@ -1144,24 +889,6 @@ class PipelineShaderObjectDB
                 uuid BYTEA UNIQUE \
             ); \
         ");
-
-        // console.log("[DBUG][INFO] CREATE TABLE IF NOT EXISTS projects_users")
-        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS projects_users \
-        //     ( \
-        //         projectid INT NOT NULL REFERENCES projects (projectid) ON DELETE CASCADE, \
-        //         userid INT NOT NULL REFERENCES users (userid) ON DELETE CASCADE, \
-        //         CONSTRAINT projects_users_key PRIMARY KEY (projectid, userid) \
-        //     ); \
-        // ");
-
-        // console.log("[DBUG][INFO] CREATE TABLE IF NOT EXISTS projects_machines")
-        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS projects_machines \
-        //     ( \
-        //         projectid INT NOT NULL REFERENCES projects (projectid) ON DELETE CASCADE, \
-        //         machineid INT NOT NULL REFERENCES machines (machineid) ON DELETE CASCADE, \
-        //         CONSTRAINT projects_machines_key PRIMARY KEY (projectid, machineid) \
-        //     ); \
-        // ");
 
         console.log("[DBUG][INFO] CREATE TABLE IF NOT EXISTS project_user_perms")
         await this.pgdb.query("CREATE TABLE IF NOT EXISTS project_user_perms \
@@ -1252,13 +979,6 @@ class PipelineShaderObjectDB
 
     async InitialiseMachines()
     {        
-        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS machineprints \
-        //     ( \
-        //         machineprintid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
-        //         fingerprint BYTEA UNIQUE \
-        //     ); \
-        // ");
-
         await this.pgdb.query("CREATE TABLE IF NOT EXISTS machines \
             ( \
                 machineid INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, \
@@ -1268,14 +988,6 @@ class PipelineShaderObjectDB
                 pipelinecacheids INT ARRAY DEFAULT '{}' NOT NULL \
             ); \
         ");
-
-        // await this.pgdb.query("CREATE TABLE IF NOT EXISTS user_machine \
-        //     ( \
-        //         machineid INT REFERENCES machines (machineid) ON UPDATE CASCADE ON DELETE CASCADE, \
-        //         ownerid INT REFERENCES auth (userid) ON UPDATE CASCADE, \
-        //         CONSTRAINT user_machine_key PRIMARY KEY (machineid, ownerid)\
-        //     ); \
-        // ");
     }
 
     async GetAuthByUsername(username: string)
@@ -1303,18 +1015,6 @@ class PipelineShaderObjectDB
     {
         return this.pgdb.manyOrNone(this.PSGetPipelineDataByToken, [token]);
     }
-
-    
-
-    // async GetAuthByUID(uid: number)
-    // {
-    //     return this.pgdb.oneOrNone(this.PSGetAuthByUID, [uid]);
-    // }
-
-    // async GetUserByUsername(username: string)
-    // {
-    //     return this.pgdb.oneOrNone(this.PSGetUserByUsername, [username]);
-    // }
 
     async GetUserByUID(uid: number)
     {
@@ -1351,7 +1051,6 @@ class PipelineShaderObjectDB
         return this.pgdb.manyOrNone(this.PSGetProjectsByOrgUUID_ValidatedByUserID, [orguuid, uid]);
     }
 
-
     async GetMachinesByProjectUUID_ValidatedByUserID(projectuuid: Buffer, uid: number, cdata: Date)
     {
         return this.pgdb.manyOrNone(this.PSGetMachinesByProjectUUID_ValidatedByUserID, [projectuuid, uid, cdata]);
@@ -1377,47 +1076,6 @@ class PipelineShaderObjectDB
         return this.pgdb.oneOrNone(this.PSDeleteProjectFromOrgByUUIDs_ValidatedByUserID, [print, org, userid]);
     }
 
-    
-    // async GetPipelineCacheByHash(hash: Buffer)
-    // {
-    //     return this.pgdb.oneOrNone(this.PSGetPipelineCacheByHash, [hash]);
-    // }
-
-    // async GetPipelineCacheByHashShort(hash: Buffer)
-    // {
-    //     return this.pgdb.oneOrNone(this.PSGetPipelineCacheByHashShort, [hash]);
-    // }
-
-    // async GetPipelineCachePathByHash(hash: Buffer)
-    // {
-    //     return this.pgdb.oneOrNone(this.PSGetPipelineCachePathByHash, [hash]);
-    // }
-
-    // async GetPipelineCacheTagsByHash(hash: Buffer)
-    // {
-    //     return this.pgdb.oneOrNone(this.PSGetPipelineCacheTagsByHash, [hash]);
-    // }
-
-    // async GetPipelineCacheByTag(tags: string)
-    // {
-    //     return this.pgdb.manyOrNone(this.PSGetPipelineCacheByTag, [tags.toLowerCase()]);
-    // }
-
-    // async GetPipelineCacheByTagShort(tags: string)
-    // {
-    //     return this.pgdb.manyOrNone(this.PSGetPipelineCacheByTagShort, [tags.toLowerCase()]);
-    // }
-
-    // async GetAllPipelineCaches()
-    // {
-    //     return this.pgdb.manyOrNone(this.PSGetAllPipelineCaches, []);
-    // }
-
-    // async GetAllPipelineCachesShort()
-    // {
-    //     return this.pgdb.manyOrNone(this.PSGetAllPipelineCachesShort, []);
-    // }
-
     async GetPipelineCacheDataByHash(hash: Buffer)
     {
         return this.pgdb.oneOrNone(this.PSGetPipelineCacheDataByHash, [hash]);
@@ -1433,31 +1091,6 @@ class PipelineShaderObjectDB
         return this.pgdb.oneOrNone(this.PSGetShaderInfoDataByHashShort, [hash]);
     }
 
-    // async GetAllPipelineCachesMark()
-    // {
-    //     return this.pgdb.manyOrNone(this.PSGetAllPipelineCachesMark, []);
-    // }
-
-    // async UpdatePipelineCacheLocationByID(identifier: number, relPath: string)
-    // {
-    //     return this.pgdb.none(this.PSUpdatePipelineCacheLocationByID, [identifier, relPath]);
-    // }
-
-    // async UpdatePipelineCacheTagsByID(identifier: number, tags: string)
-    // {
-    //     return this.pgdb.none(this.PSUpdatePipelineCacheTagsByID, [identifier, tags]);
-    // }
-
-    // async UpdatePipelineCacheTagsByHash(hash: Buffer, tags: string)
-    // {
-    //     return this.pgdb.none(this.PSUpdatePipelineCacheTagsByHash, [hash, tags]);
-    // }
-
-    // async DeleteTag(tags: string)
-    // {
-    //     return this.pgdb.oneOrNone(this.PSDeleteTag, [`'${tags}'`, tags]);
-    // }
-
     async GetPipelineCacheByHashVersionProjectShort(hash: Buffer, projectuuid: Buffer, vMaj: number, vMin: number, vRev:number, vBuild:number)
     {
         return this.pgdb.manyOrNone(this.PSGetPipelineCacheByHashVersionProjectShort, [hash, projectuuid, vMaj, vMin, vRev, vBuild]);
@@ -1467,38 +1100,6 @@ class PipelineShaderObjectDB
     {
         return this.pgdb.manyOrNone(this.PSGetStableKeyInfoByHashVersionProjectShort, [hash, projectuuid, vMaj, vMin, vRev, vBuild]);
     }
-
-    
-
-    // async RenameTag(oldTag: string, newTag: string)
-    // {
-    //     return this.pgdb.none(this.PSRenameTag, [`'${oldTag}'`, newTag, oldTag]);
-    // }   
-
-    // async AppendTag(query: string, newTag: string)
-    // {
-    //     return this.pgdb.oneOrNone(this.PSAppendTag, [query, newTag]);
-    // }   
-
-    // async GetPipelineCachesByBoard(boarduid: number)
-    // {
-    //     return this.pgdb.manyOrNone(this.PSGetPipelineCachesByBoard, [boarduid]);
-    // }
-
-    // async GetPipelineCachesByUID(uid: number)
-    // {
-    //     return this.pgdb.manyOrNone(this.PSGetAllPipelinesForUID, [uid]);
-    // }
-
-    // async GetPipelineCachesByBoardShort(boarduid: number)
-    // {
-    //     return this.pgdb.manyOrNone(this.PSGetPipelineCachesByBoardShort, [boarduid]);
-    // }
-
-    // async GetPipelineCachesByBoardSearchShort(boarduid: number, search: string)
-    // {
-    //     return this.pgdb.manyOrNone(this.PSGetPipelineCachesByBoardSearchShort, [boarduid, search]);
-    // }
 
     async GetMachinePermissionsForProjectByUUIDs(projectuuid: Buffer, machineuuid: Buffer, currentDate: Date)
     {
@@ -1544,8 +1145,6 @@ class PipelineShaderObjectDB
     {
         return this.pgdb.manyOrNone(this.PSGetInfoDataAfterVersion_ValidatedByMachinePlatformModel, [projectuuid, machineuuid, versionMajor, versionMinor, versionRevision, versionBuild, currentDate, platform, shaderModel]);
     }
-
-    
     
     async GetPermissionsByProjectUUIDAndUserID(projectid: Buffer, userid: number, currentDate: Date)
     {
@@ -1559,7 +1158,6 @@ class PipelineShaderObjectDB
 
     async AddUserToOrganisation(orgid: number, userid: number)
     {
-        //await this.pgdb.none(this.PSAddUserToOrganisation, [orgid, userid]);
         return this.pgdb.none(this.PSAddUserToOrganisationUserPerms, [orgid, userid]);
     }
 
@@ -1600,52 +1198,6 @@ class PipelineShaderObjectDB
             permEditProject
         ]);
     }
-
-    // async RemovePipelineCacheToBoard(boarduid: number, hash: Buffer)
-    // {
-    //     return this.pgdb.none(this.PSRemovePipelineCacheFromBoard, [boarduid, hash]);
-    // }
-    
-    // async MarkPipelineCacheDeleted(pipelinecacheid:number)
-    // {
-    //     return this.pgdb.none(this.PSMarkPipelineCacheDeletedByID, [pipelinecacheid]);
-    // }
-
-    // async MarkPipelineCacheDeletedHash(hash: Buffer)
-    // {
-    //     return this.pgdb.none(this.PSMarkPipelineCacheDeletedByHash, [hash]);
-    // }
-
-    // async MarkPipelineCacheLive(pipelinecacheid:number)
-    // {
-    //     return this.pgdb.none(this.PSMarkPipelineCacheLiveByID, [pipelinecacheid]);
-    // }
-
-    // async MarkPipelineCacheLiveHash(hash: Buffer)
-    // {
-    //     return this.pgdb.none(this.PSMarkPipelineCacheLiveByHash, [hash]);
-    // }
-
-    // async GetPipelineCacheCount()
-    // {
-    //     return this.pgdb.one(this.PSGetPipelineCacheCount, []);
-    // }
-
-    // async GetPipelineCacheCountByTag(tag: string)
-    // {
-    //     return this.pgdb.one(this.PSGetPipelineCacheCountByTag, [tag]);
-    // }
-    
-    
-    // async GetUntaggedPipelineCaches()
-    // {
-    //     return this.pgdb.manyOrNone(this.PSGetUntaggedPipelineCaches, []);
-    // }
-
-    // async GetTagList()
-    // {
-    //     return this.pgdb.manyOrNone(this.PSGetTagList, []);
-    // }
 
     PSSyncUpdatePSO = new PreparedStatement(
         {
@@ -1764,8 +1316,6 @@ class PipelineShaderObjectDB
                     );
     
                     //console.log(`Added ${res["pipelinecacheid"]}`)
-    
-                    // Pump
                     //this.AddPipelineCacheToBoard(machine, res["pipelinecacheid"]);
     
                     return 0;
@@ -1833,8 +1383,6 @@ class PipelineShaderObjectDB
                     );
     
                     //console.log(`Added ${res["pipelinecacheid"]}`)
-    
-                    // Pump
                     this.AddPipelineCacheToBoard(machine, res["pipelinecacheid"]);
     
                     return 0;
@@ -2146,22 +1694,11 @@ class PipelineShaderObjectDB
 
 
 
-            //auth_tokens
-
-            // await this.pgdb.none("UPDATE auth SET tokens = ARRAY_APPEND(tokens, $2) WHERE auth.userid = $1", [
-            //     res["userid"],
-            //     token
-            // ]
-            // );
-
             let res2 = await this.pgdb.one("INSERT INTO users (userid, displayname) VALUES ($1, $2) RETURNING displayname;", [
                 res.userid, 
                 displayname
             ]
             );
-
-            // Create User Organisation
-            // Check UUID is unique
 
             let res3 = await this.pgdb.one("INSERT INTO organisations (displayname, uuid) VALUES ($1, $2) RETURNING orgid;",
             [
@@ -2176,6 +1713,7 @@ class PipelineShaderObjectDB
                 await this.AddUserToOrganisation(res3.orgid, res.userid);
                 
                 // Grant full perms
+                // TODO: Make perms do something and be setable
                 await this.ModifyOrgUserPermissions(
                     res3.orgid,
                     res.userid,

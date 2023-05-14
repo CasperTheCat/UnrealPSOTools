@@ -34,19 +34,12 @@
             }
         }
 
-        // CLAMP
-        // let negation = mody - (rect.height/2);
-        // if(negation <= 0)
-        // {
-        //     mody = mody - negation;
-        // }
-
         dispatch('summon', {
             "uuid": uuid,
             "name": name,
             "type": editState,
-            "x": modx,//.pageX,
-            "y": mody//pageY
+            "x": modx,
+            "y": mody
         });
     }
 

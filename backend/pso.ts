@@ -181,7 +181,6 @@ async function entry()
     app.get("/api/pco/all/token/:token", async (req, res) => 
     {
         getAllPCOsForUser(req, res, psoDB);
-        //getAllPCOs(req, res, psoDB);
     });
 
     app.post("/api/pco/version/after", bodyParser.json({ limit: '99mb', strict: true }), async (req, res) => 
@@ -189,7 +188,6 @@ async function entry()
         try
         {
             let jsonbody: JSON = req.body;
-            //console.log(jsonbody);
             if (
                 "project" in jsonbody && typeof jsonbody["project"] === 'string' &&
                 "machine" in jsonbody && typeof jsonbody["machine"] === 'string' &&
@@ -676,11 +674,6 @@ async function entry()
 
                 if (Perms)
                 {
-                    // for(let machine of Perms)
-                    // {
-                    //     machine.fingerprint = machine.fingerprint.toString('base64');
-                    // }
-
                     Perms = JSON.stringify(Perms);
 
                     res.status(200).send(Perms);//(`{ "permissions": ${Perms} }`);

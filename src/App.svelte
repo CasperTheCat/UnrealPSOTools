@@ -1121,12 +1121,6 @@
 </nav>
 
 <main style="padding-top: 64px;">
-	<!-- <p>Welcome to the Mirage Moodboard</p>
-	<br/>
-	{#if countImages > 0}
-		<p>Mirage contains {countImages} {countImages === 1 ? 'image' : 'images'}</p>
-		<br/>
-	{/if} -->
 	{#if isLoggedIn}
 		{#if PageType == E_PAGETYPE_Default}
 			<div class="menu">
@@ -1190,7 +1184,6 @@
 			<div class="menu">
 				{#if bOrgHasEditProject || projectHasUserSpecificAdmin}
 					<Card type={orgName} uuid={orgUUID} on:summon={SwitchToOrgProjectMachines} name="Machines"/>
-					<!-- <Card type={orgName} uuid={orgUUID} on:summon={SwitchToOrgProjectUsers} name="Users"/> -->
 				{/if}
 				{#if !(bOrgHasEditProject || projectHasUserSpecificAdmin) }
 					Insufficient Permissions
@@ -1229,17 +1222,6 @@
 		<h2 slot="header">
 			Create Organisation
 		</h2>
-		<!-- <input bind:value={SelectedBoardID} type="number" min="1"> -->
-		<!-- <span class="centering">
-		<button on:click={HandleAddToBoard}>Add to Board</button>
-		<button on:click={HandleRemoveFromBoard}>Remove</button>
-		</span>
-		<textarea bind:value={editTagString} rows="15"></textarea>
-		<button on:click={HandleSubmitNewTags}>Save Tags</button>
-		<button on:click={HandleSuggestTags}>Suggest</button>
-		<button on:click={HandleViewOriginal}>View</button> -->
-
-		
 	</Modal>
 	{:else if ModalState == E_MODALSTATE_ShowMachine}
 		<Modal offsetY={listedModalY} on:close={HandleImageDesummon}>
